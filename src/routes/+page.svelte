@@ -20,12 +20,14 @@
         circles[0] = {
             x: 100,
             y: 100,
-            r: 10
+            r: 10,
+            distance: 0
         };
         circles[1] = {
             x: 200,
             y: 200,
-            r: 10
+            r: 10,
+            distance: 0
         };
 
         window.addEventListener("resize", () => {
@@ -40,6 +42,17 @@
             ctx.fillStyle = 'rgb(200, 0, 0)';
             ctx.fillRect(10, 10, 55, 50);
 
+            ctx.arc(window.innerWidth/2, window.innerHeight/2, 10, 0, 2 * Math.PI, false);
+            ctx.fillStyle = 'blue';
+            ctx.fill();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#003300';
+            ctx.stroke();
+
+            ctx.font = "12px Arial";
+            ctx.fillStyle = "black";
+            ctx.fillText(`(${window.innerWidth/2}, ${window.innerHeight/2})`, window.innerWidth/2 + 10, window.innerHeight/2 + 10);
+
             for (const key in circles) {
                 if (Object.hasOwnProperty.call(circles, key)) {
                     const circle = circles[key];
@@ -50,6 +63,16 @@
                     ctx.lineWidth = 1;
                     ctx.strokeStyle = '#003300';
                     ctx.stroke();
+
+                    let distance = Math.sqrt(Math.pow(window.innerWidth/2 - circle.x, 2) + Math.pow(window.innerHeight/2 - circle.y, 2));
+                    console.log(distance);
+                    // round to 2 decimal places
+                    distance = Math.round(distance * 100) / 100;
+
+                    // write the distance next to the circle
+                    ctx.font = "12px Arial";
+                    ctx.fillStyle = "black";
+                    ctx.fillText(distance, circle.x + circle.r, circle.y + circle.r);
                 }
             }
         }
