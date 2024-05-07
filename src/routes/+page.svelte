@@ -39,14 +39,6 @@
             const ctx = canvas.getContext('2d');
             ctx.fillStyle = 'rgb(200, 0, 0)';
             ctx.fillRect(10, 10, 55, 50);
-            
-            ctx.beginPath();
-            ctx.arc(100, 100, 10, 0, 2 * Math.PI, false);
-            ctx.fillStyle = 'green';
-            ctx.fill();
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = '#003300';
-            ctx.stroke();
 
             for (const key in circles) {
                 if (Object.hasOwnProperty.call(circles, key)) {
