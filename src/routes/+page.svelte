@@ -7,13 +7,20 @@
     <canvas id="myCanvas" width="{window.innerWidth}" height="{window.innerHeight-h}"></canvas>
 </div>
 
-<script>
-  import { onMount } from 'svelte';
+<script lang="ts">
+    import { onMount } from 'svelte';
+
+    class User {
+        name: string;
+        age: number;
+        constructor(name: string, age: number) {
+            this.name = name;
+            this.age = age;
+        }
+    }
+
     let h = 0;
-    /**
-	 * @type {any[]}
-	 */
-    let circles = [];
+    let circles: any[] = [];
     onMount(() => {
         console.log(window.innerHeight, window.innerWidth)
 
@@ -33,14 +40,22 @@
         window.addEventListener("resize", () => {
             redraw();
         });
+        const canvas = document.getElementById('myCanvas');
+        if (!canvas) {
+            return;
+        }
+        canvas.addEventListener("mousedown", function (e) {
+            console.log(e);
+        }, false);
+        canvas.addEventListener("mouseup", function (e) {
+            console.log(e);
+        }, false);
         redraw();
 
         function redraw() {
             const canvas = document.getElementById('myCanvas');
             // @ts-ignore
             const ctx = canvas.getContext('2d');
-            ctx.fillStyle = 'rgb(200, 0, 0)';
-            ctx.fillRect(10, 10, 55, 50);
 
             ctx.arc(window.innerWidth/2, window.innerHeight/2, 10, 0, 2 * Math.PI, false);
             ctx.fillStyle = 'blue';
