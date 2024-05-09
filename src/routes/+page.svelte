@@ -61,6 +61,14 @@
             }
             selector[1] = [ e.offsetX, e.offsetY ];
             isSelecting = false;
+
+            // check if any users are in the selector
+            for (let i = 0; i < users.length; i++) {
+                if (users[i].pos[0] > selector[0][0] && users[i].pos[0] < selector[1][0] &&
+                    users[i].pos[1] > selector[0][1] && users[i].pos[1] < selector[1][1]) {
+                    console.log(`selected users[${i}]`, users[i].name);
+                }
+            }
         }, false);
         // TODO would like to do in main loop, but i dont have it
         canvas.addEventListener("mousemove", function (e) {
@@ -96,7 +104,7 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             // draw the selector
-            if (selector.length === 2) {
+            if (isSelecting && selector.length === 2) {
                 ctx.beginPath();
                 ctx.rect(selector[0][0], selector[0][1], selector[1][0] - selector[0][0], selector[1][1] - selector[0][1]);
                 ctx.stroke();
