@@ -28,6 +28,7 @@
         new User("Joey", [window.innerWidth/2, window.innerHeight/2], true)
     ];
     let selected = -1;
+    let cur = 2; // good enough for now; better than hardcoding
     onMount(() => {
         // console.log(window.innerHeight, window.innerWidth)
 
@@ -73,39 +74,35 @@
             // @ts-ignore
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            ctx.arc(window.innerWidth/2, window.innerHeight/2, 10, 0, 2 * Math.PI, false);
-            ctx.fillStyle = 'blue';
-            ctx.fill();
-            ctx.lineWidth = 1;
-            ctx.strokeStyle = '#003300';
-            ctx.stroke();
-
-            ctx.font = "12px Arial";
-            ctx.fillStyle = "black";
-            ctx.fillText(`(${window.innerWidth/2}, ${window.innerHeight/2})`, window.innerWidth/2 + 10, window.innerHeight/2 + 10);
-
             for (let i = 0; i < users.length; i++) {
                 const user = users[i];
 
                 ctx.beginPath();
                 ctx.arc(user.pos[0], user.pos[1], 10, 0, 2 * Math.PI, false);
-                ctx.fillStyle = 'green';
+                if (user.isCurrent) {
+                    ctx.fillStyle = 'blue';
+                } else {
+                    ctx.fillStyle = 'green';
+                }
                 ctx.fill();
                 ctx.lineWidth = 1;
                 ctx.strokeStyle = '#003300';
                 ctx.stroke();
 
-                let distance = Math.sqrt(Math.pow(window.innerWidth/2 - user.pos[0], 2) + Math.pow(window.innerHeight/2 - user.pos[1], 2));
-                // console.log(distance);
+                let distance = Math.sqrt(Math.pow(users[cur].pos[0] - user.pos[0], 2) + Math.pow(users[cur].pos[1] - user.pos[1], 2));
                 // round to 2 decimal places
                 distance = Math.round(distance * 100) / 100;
 
                 // write the distance next to the user
                 ctx.font = "12px Arial";
                 ctx.fillStyle = "black";
-                ctx.fillText(distance, user.pos[0] + 10, user.pos[1] + 10);
                 // TODO do seomthing with the distance
                 // TODO radius based on window or something
+                if (user.isCurrent) { // can now use the pos rather than reget it
+                    ctx.fillText(`(${user.pos[0]}, ${user.pos[1]})`, user.pos[0] + 10, user.pos[1] + 10);
+                } else {
+                    ctx.fillText(distance, user.pos[0] + 10, user.pos[1] + 10);
+                }
             }
         }
     });
