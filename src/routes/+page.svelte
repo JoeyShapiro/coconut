@@ -53,7 +53,12 @@
                 selected = -1;
             }
         }, false);
-        redraw();
+        // TODO would like to do in main loop, but i dont have it
+        canvas.addEventListener("mousemove", function (e) {
+            if (selected !== -1) {
+                users[selected].pos = [e.offsetX, e.offsetY];
+            }
+        }, false);
 
         setInterval(() => {
             redraw();
@@ -79,33 +84,28 @@
             ctx.fillStyle = "black";
             ctx.fillText(`(${window.innerWidth/2}, ${window.innerHeight/2})`, window.innerWidth/2 + 10, window.innerHeight/2 + 10);
 
-            for (const key in users) {
-                if (Object.hasOwnProperty.call(users, key)) {
-                    const user = users[key];
+            for (let i = 0; i < users.length; i++) {
+                const user = users[i];
 
-                    // efficient and smart
-                    
+                ctx.beginPath();
+                ctx.arc(user.pos[0], user.pos[1], 10, 0, 2 * Math.PI, false);
+                ctx.fillStyle = 'green';
+                ctx.fill();
+                ctx.lineWidth = 1;
+                ctx.strokeStyle = '#003300';
+                ctx.stroke();
 
-                    ctx.beginPath();
-                    ctx.arc(user.pos[0], user.pos[1], 10, 0, 2 * Math.PI, false);
-                    ctx.fillStyle = 'green';
-                    ctx.fill();
-                    ctx.lineWidth = 1;
-                    ctx.strokeStyle = '#003300';
-                    ctx.stroke();
+                let distance = Math.sqrt(Math.pow(window.innerWidth/2 - user.pos[0], 2) + Math.pow(window.innerHeight/2 - user.pos[1], 2));
+                // console.log(distance);
+                // round to 2 decimal places
+                distance = Math.round(distance * 100) / 100;
 
-                    let distance = Math.sqrt(Math.pow(window.innerWidth/2 - user.pos[0], 2) + Math.pow(window.innerHeight/2 - user.pos[1], 2));
-                    // console.log(distance);
-                    // round to 2 decimal places
-                    distance = Math.round(distance * 100) / 100;
-
-                    // write the distance next to the user
-                    ctx.font = "12px Arial";
-                    ctx.fillStyle = "black";
-                    ctx.fillText(distance, user.pos[0] + 10, user.pos[1] + 10);
-                    // TODO do seomthing with the distance
-                    // TODO radius based on window or something
-                }
+                // write the distance next to the user
+                ctx.font = "12px Arial";
+                ctx.fillStyle = "black";
+                ctx.fillText(distance, user.pos[0] + 10, user.pos[1] + 10);
+                // TODO do seomthing with the distance
+                // TODO radius based on window or something
             }
         }
     });
