@@ -31,26 +31,33 @@
     onMount(() => {
         console.log(window.innerHeight, window.innerWidth)
 
-        window.addEventListener("resize", () => {
-            redraw();
-        });
+        // window.addEventListener("resize", () => {
+        //     redraw();
+        // });
         const canvas = document.getElementById('myCanvas');
         if (!canvas) {
             return;
         }
         canvas.addEventListener("mousedown", function (e) {
-            console.log(e.offsetX, e.offsetY);
             for (let i = 0; i < users.length; i++) {
-                const user = users[i];
                 if (Math.sqrt(Math.pow(e.offsetX - users[i].pos[0], 2) + Math.pow(e.offsetY - users[i].pos[1], 2)) < 10) {
                     console.log(`clicked on users[${i}]`, users[i].name);
+                    selected = i;
                 }
             }
         }, false);
         canvas.addEventListener("mouseup", function (e) {
-            console.log(e.offsetX, e.offsetY);
+            if (selected !== -1) {
+                users[selected].pos = [e.offsetX, e.offsetY];
+                console.log(`moved users[${selected}] to (${e.offsetX}, ${e.offsetY})`);
+                selected = -1;
+            }
         }, false);
         redraw();
+
+        // setInterval(() => {
+        //     redraw();
+        // }, 100);
 
         function redraw() {
             const canvas = document.getElementById('myCanvas');
