@@ -29,7 +29,7 @@
     ];
     let selected = -1;
     onMount(() => {
-        console.log(window.innerHeight, window.innerWidth)
+        // console.log(window.innerHeight, window.innerWidth)
 
         // window.addEventListener("resize", () => {
         //     redraw();
@@ -55,14 +55,18 @@
         }, false);
         redraw();
 
-        // setInterval(() => {
-        //     redraw();
-        // }, 100);
+        setInterval(() => {
+            redraw();
+        }, 100);
 
         function redraw() {
             const canvas = document.getElementById('myCanvas');
             // @ts-ignore
             const ctx = canvas.getContext('2d');
+
+            // clear the canvas
+            // @ts-ignore
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             ctx.arc(window.innerWidth/2, window.innerHeight/2, 10, 0, 2 * Math.PI, false);
             ctx.fillStyle = 'blue';
@@ -78,6 +82,10 @@
             for (const key in users) {
                 if (Object.hasOwnProperty.call(users, key)) {
                     const user = users[key];
+
+                    // efficient and smart
+                    
+
                     ctx.beginPath();
                     ctx.arc(user.pos[0], user.pos[1], 10, 0, 2 * Math.PI, false);
                     ctx.fillStyle = 'green';
@@ -87,7 +95,7 @@
                     ctx.stroke();
 
                     let distance = Math.sqrt(Math.pow(window.innerWidth/2 - user.pos[0], 2) + Math.pow(window.innerHeight/2 - user.pos[1], 2));
-                    console.log(distance);
+                    // console.log(distance);
                     // round to 2 decimal places
                     distance = Math.round(distance * 100) / 100;
 
