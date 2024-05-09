@@ -28,6 +28,8 @@
         new User("Joey", [window.innerWidth/2, window.innerHeight/2], true)
     ];
     let selected = -1;
+    let selector: any[][] = [];
+    let isSelecting: boolean = false;
     let cur = 2; // good enough for now; better than hardcoding
     onMount(() => {
         // console.log(window.innerHeight, window.innerWidth)
@@ -44,8 +46,12 @@
                 if (Math.sqrt(Math.pow(e.offsetX - users[i].pos[0], 2) + Math.pow(e.offsetY - users[i].pos[1], 2)) < 10) {
                     console.log(`clicked on users[${i}]`, users[i].name);
                     selected = i;
+                    return;
                 }
             }
+            selector[0] = [ e.offsetX, e.offsetY ];
+            selector[1] = [];
+            isSelecting = true;
         }, false);
         canvas.addEventListener("mouseup", function (e) {
             if (selected !== -1) {
@@ -53,11 +59,26 @@
                 console.log(`moved users[${selected}] to (${e.offsetX}, ${e.offsetY})`);
                 selected = -1;
             }
+            selector[1] = [ e.offsetX, e.offsetY ];
+            isSelecting = false;
         }, false);
         // TODO would like to do in main loop, but i dont have it
         canvas.addEventListener("mousemove", function (e) {
             if (selected !== -1) {
                 users[selected].pos = [e.offsetX, e.offsetY];
+            }
+            // change the style of the cursor
+            canvas.style.cursor = "default";
+            for (let i = 0; i < users.length; i++) {
+                if (Math.sqrt(Math.pow(e.offsetX - users[i].pos[0], 2) + Math.pow(e.offsetY - users[i].pos[1], 2)) < 10) {
+                    canvas.style.cursor = "pointer";
+                    break;
+                }
+            }
+
+            // set the second point of the selector
+            if (isSelecting) {
+                selector[1] = [ e.offsetX, e.offsetY ];
             }
         }, false);
 
@@ -73,6 +94,13 @@
             // clear the canvas
             // @ts-ignore
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // draw the selector
+            if (selector.length === 2) {
+                ctx.beginPath();
+                ctx.rect(selector[0][0], selector[0][1], selector[1][0] - selector[0][0], selector[1][1] - selector[0][1]);
+                ctx.stroke();
+            }
 
             for (let i = 0; i < users.length; i++) {
                 const user = users[i];
