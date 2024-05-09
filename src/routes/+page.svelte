@@ -12,30 +12,24 @@
 
     class User {
         name: string;
-        age: number;
-        constructor(name: string, age: number) {
+        pos: [number, number];
+        isCurrent: boolean; // TODO this
+        constructor(name: string, pos: [number, number], isCurrent: boolean = false) {
             this.name = name;
-            this.age = age;
+            this.pos = pos;
+            this.isCurrent = isCurrent;
         }
     }
 
     let h = 0;
-    let circles: any[] = [];
+    let users: User[] = [ // TODO what is x and y
+        new User("John", [100, 100]),
+        new User("Jane", [200, 200]),
+        new User("Joey", [window.innerWidth/2, window.innerHeight/2], true)
+    ];
+    let selected = -1;
     onMount(() => {
         console.log(window.innerHeight, window.innerWidth)
-
-        circles[0] = {
-            x: 100,
-            y: 100,
-            r: 10,
-            distance: 0
-        };
-        circles[1] = {
-            x: 200,
-            y: 200,
-            r: 10,
-            distance: 0
-        };
 
         window.addEventListener("resize", () => {
             redraw();
@@ -45,10 +39,16 @@
             return;
         }
         canvas.addEventListener("mousedown", function (e) {
-            console.log(e);
+            console.log(e.offsetX, e.offsetY);
+            for (let i = 0; i < users.length; i++) {
+                const user = users[i];
+                if (Math.sqrt(Math.pow(e.offsetX - users[i].pos[0], 2) + Math.pow(e.offsetY - users[i].pos[1], 2)) < 10) {
+                    console.log(`clicked on users[${i}]`, users[i].name);
+                }
+            }
         }, false);
         canvas.addEventListener("mouseup", function (e) {
-            console.log(e);
+            console.log(e.offsetX, e.offsetY);
         }, false);
         redraw();
 
@@ -68,26 +68,28 @@
             ctx.fillStyle = "black";
             ctx.fillText(`(${window.innerWidth/2}, ${window.innerHeight/2})`, window.innerWidth/2 + 10, window.innerHeight/2 + 10);
 
-            for (const key in circles) {
-                if (Object.hasOwnProperty.call(circles, key)) {
-                    const circle = circles[key];
+            for (const key in users) {
+                if (Object.hasOwnProperty.call(users, key)) {
+                    const user = users[key];
                     ctx.beginPath();
-                    ctx.arc(circle['x'], circle['y'], circle['r'], 0, 2 * Math.PI, false);
+                    ctx.arc(user.pos[0], user.pos[1], 10, 0, 2 * Math.PI, false);
                     ctx.fillStyle = 'green';
                     ctx.fill();
                     ctx.lineWidth = 1;
                     ctx.strokeStyle = '#003300';
                     ctx.stroke();
 
-                    let distance = Math.sqrt(Math.pow(window.innerWidth/2 - circle.x, 2) + Math.pow(window.innerHeight/2 - circle.y, 2));
+                    let distance = Math.sqrt(Math.pow(window.innerWidth/2 - user.pos[0], 2) + Math.pow(window.innerHeight/2 - user.pos[1], 2));
                     console.log(distance);
                     // round to 2 decimal places
                     distance = Math.round(distance * 100) / 100;
 
-                    // write the distance next to the circle
+                    // write the distance next to the user
                     ctx.font = "12px Arial";
                     ctx.fillStyle = "black";
-                    ctx.fillText(distance, circle.x + circle.r, circle.y + circle.r);
+                    ctx.fillText(distance, user.pos[0] + 10, user.pos[1] + 10);
+                    // TODO do seomthing with the distance
+                    // TODO radius based on window or something
                 }
             }
         }
