@@ -27,7 +27,7 @@
         new User("Jane", [200, 200]),
         new User("Joey", [window.innerWidth/2, window.innerHeight/2], true)
     ];
-    let selected = -1;
+    let selected = -1; // TODO make this 2d
     let selector: any[][] = [];
     let isSelecting: boolean = false;
     let cur = 2; // good enough for now; better than hardcoding
