@@ -6,3 +6,4 @@
   - [ ] max distance
 - [ ] show percentage of max distance instead of distance
 - [ ] get audio
+- [ ] directional audio
