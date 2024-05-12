@@ -56,25 +56,20 @@ fn main() {
         }
     };
 
-    // create a file
-    let data = "samples\n";
-    let mut f = std::fs::File::create("samples.csv").expect("Unable to create file");
-    std::io::Write::write_all(&mut f, data.as_bytes()).expect("Unable to write data");
+    // TODO like in 270, each person gets a time split. this is know known and used. then they are amplified accordingly
+    // TODO need to change the amplification
 
     // get the current path
     let path = std::env::current_dir().unwrap();
     println!("The current directory is {}", path.display());
 
-    let mut amplifier = 5.0;
+    let mut amplifier = 1.0;
     let output_data_fn = move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
         let mut input_fell_behind = false;
         // fill the output buffer with samples from the ring buffer
         for sample in data {
             *sample = match consumer.pop() {
                 Some(s) => {
-                    // write the sample to the file
-                    std::io::Write::write_all(&mut f, s.to_string().as_bytes()).expect("Unable to write data");
-                    std::io::Write::write_all(&mut f, "\n".as_bytes()).expect("Unable to write data");
                     s*amplifier
                 },
                 None => {
