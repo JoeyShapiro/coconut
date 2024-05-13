@@ -5,6 +5,13 @@ use std::{cell::RefCell, thread::sleep};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
+struct Settings {
+    amplifier: f32,
+}
+
+#[derive(Default)]
+struct AppState(std::sync::Arc<std::sync::Mutex<Option<Settings>>>);
+
 fn main() {
     let host = cpal::default_host();
 
@@ -57,21 +64,25 @@ fn main() {
     let path = std::env::current_dir().unwrap();
     println!("The current directory is {}", path.display());
 
+    let mut state = AppState(std::sync::Arc::new(std::sync::Mutex::new(Some(Settings { amplifier: 1.0 }))));
+
     // oh its between threads
     // create a mutex
     // cloning a reference?
-    let amplifier = std::sync::Arc::new(std::sync::Mutex::new(1.0));
-    let r = std::sync::Arc::clone(&amplifier);
+    let r = std::sync::Arc::clone(&state.0);
     let output_data_fn = move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
         let mut input_fell_behind = false;
+        // get the amplifier from the settings or default to 1.0
+        let amp = if let Some(settings) = & *r.lock().unwrap() {
+            settings.amplifier
+        } else {
+            1.0  
+        };
         // fill the output buffer with samples from the ring buffer
-        // TODO does this do the lock and unlock?
-        let amplifier = { *r.lock().unwrap() };
-        println!("Amplifier: {}", amplifier);
         for sample in data {
             *sample = match consumer.pop() {
                 Some(s) => {
-                    s*amplifier
+                    s*amp
                 },
                 None => {
                     input_fell_behind = true;
@@ -95,21 +106,30 @@ fn main() {
     input_stream.play().unwrap();
     output_stream.play().unwrap();
 
-    // sleep for 5s
-    sleep(std::time::Duration::from_secs(5));
-    let r = std::sync::Arc::clone(&amplifier);
-    {
-        let mut amplifier = r.lock().unwrap();
-        *amplifier = 5.0;
-    }
-    println!("Amplifying the audio by 5x");
-
 	tauri::Builder::default()
+        .manage(state)
+        .invoke_handler(tauri::generate_handler![get_amplifier, set_amplifier])
 		.run(tauri::generate_context!())
 		.expect("error while running tauri application");
 
 	drop(input_stream);
     drop(output_stream);
+}
+
+// dont really need this, but being consistant
+#[tauri::command]
+fn get_amplifier() -> f32 {
+    1.0
+}
+
+#[tauri::command]
+fn set_amplifier(state: tauri::State<'_, AppState>, value: f32) {
+    if let Some(settings) = &mut *state.0.lock().unwrap() {
+        settings.amplifier = value;
+        println!("Amplifier: {}", value);
+    } else {
+        println!("Settings is None, can't set amplifier");
+    }
 }
 
 fn err_fn(err: cpal::StreamError) {

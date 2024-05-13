@@ -5,10 +5,12 @@
 
 <div class="container">
     <canvas id="myCanvas" width="{window.innerWidth}" height="{window.innerHeight-h}"></canvas>
+    <button id="increment-btn">Increment counter</button>
 </div>
 
 <script lang="ts">
     import { onMount } from 'svelte';
+    import { invoke } from '@tauri-apps/api/tauri';
 
     class User {
         name: string;
@@ -89,6 +91,19 @@
                 selector[1] = [ e.offsetX, e.offsetY ];
             }
         }, false);
+    
+        function updateResponse(response: any) {
+            console.log(response);
+        }
+
+        const incrementBtn = document.querySelector('#increment-btn');
+        incrementBtn.addEventListener('click', () => {
+            invoke('set_amplifier', {
+                    value: 5.0
+                })
+                .then(updateResponse)
+                .catch(updateResponse)
+        });
 
         setInterval(() => {
             redraw();
