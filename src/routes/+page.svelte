@@ -13,11 +13,20 @@
     import { onMount } from 'svelte';
     import { invoke } from '@tauri-apps/api/tauri';
 
+    class Pos {
+        x: number;
+        y: number;
+        constructor(x: number, y: number) {
+            this.x = x;
+            this.y = y;
+        }
+    }
+
     class User {
         name: string;
-        pos: [number, number];
+        pos: Pos;
         isCurrent: boolean; // TODO this
-        constructor(name: string, pos: [number, number], isCurrent: boolean = false) {
+        constructor(name: string, pos: Pos, isCurrent: boolean = false) {
             this.name = name;
             this.pos = pos;
             this.isCurrent = isCurrent;
@@ -25,28 +34,32 @@
     }
 
     let h = 0;
-    let users: User[] = [ // TODO what is x and y
-        new User("John", [100, 100]),
-        new User("Jane", [200, 200]),
-        new User("Joey", [window.innerWidth/2, window.innerHeight/2], true)
-    ];
+    let users: User[];
     let selected = -1; // TODO make this 2d
     let selector: any[][] = [];
     let isSelecting: boolean = false;
     let cur = 2; // good enough for now; better than hardcoding
-    onMount(() => {
+    onMount(async () => {
         // console.log(window.innerHeight, window.innerWidth)
 
         // window.addEventListener("resize", () => {
         //     redraw();
         // });
+        users = await invoke('get_users').then((response) => {
+            console.log(response);
+            return response as User[];
+        }).catch((error) => {
+            console.error(error);
+            return [] as User[];
+        });
+
         const canvas = document.getElementById('myCanvas');
         if (!canvas) {
             return;
         }
         canvas.addEventListener("mousedown", function (e) {
             for (let i = 0; i < users.length; i++) {
-                if (Math.sqrt(Math.pow(e.offsetX - users[i].pos[0], 2) + Math.pow(e.offsetY - users[i].pos[1], 2)) < 10) {
+                if (Math.sqrt(Math.pow(e.offsetX - users[i].pos.x, 2) + Math.pow(e.offsetY - users[i].pos.y, 2)) < 10) {
                     console.log(`clicked on users[${i}]`, users[i].name);
                     selected = i;
                     return;
@@ -58,7 +71,7 @@
         }, false);
         canvas.addEventListener("mouseup", function (e) {
             if (selected !== -1) {
-                users[selected].pos = [e.offsetX, e.offsetY];
+                users[selected].pos = new Pos(e.offsetX, e.offsetY);
                 console.log(`moved users[${selected}] to (${e.offsetX}, ${e.offsetY})`);
                 selected = -1;
             }
@@ -67,8 +80,8 @@
 
             // check if any users are in the selector
             for (let i = 0; i < users.length; i++) {
-                if (users[i].pos[0] > selector[0][0] && users[i].pos[0] < selector[1][0] &&
-                    users[i].pos[1] > selector[0][1] && users[i].pos[1] < selector[1][1]) {
+                if (users[i].pos.x > selector[0][0] && users[i].pos.x < selector[1][0] &&
+                    users[i].pos.y > selector[0][1] && users[i].pos.y < selector[1][1]) {
                     console.log(`selected users[${i}]`, users[i].name);
                 }
             }
@@ -76,12 +89,12 @@
         // TODO would like to do in main loop, but i dont have it
         canvas.addEventListener("mousemove", function (e) {
             if (selected !== -1) {
-                users[selected].pos = [e.offsetX, e.offsetY];
+                users[selected].pos = new Pos(e.offsetX, e.offsetY);
             }
             // change the style of the cursor
             canvas.style.cursor = "default";
             for (let i = 0; i < users.length; i++) {
-                if (Math.sqrt(Math.pow(e.offsetX - users[i].pos[0], 2) + Math.pow(e.offsetY - users[i].pos[1], 2)) < 10) {
+                if (Math.sqrt(Math.pow(e.offsetX - users[i].pos.x, 2) + Math.pow(e.offsetY - users[i].pos.y, 2)) < 10) {
                     canvas.style.cursor = "pointer";
                     break;
                 }
@@ -130,7 +143,7 @@
                 const user = users[i];
 
                 ctx.beginPath();
-                ctx.arc(user.pos[0], user.pos[1], 10, 0, 2 * Math.PI, false);
+                ctx.arc(user.pos.x, user.pos.y, 10, 0, 2 * Math.PI, false);
                 if (user.isCurrent) {
                     ctx.fillStyle = 'blue';
                 } else {
@@ -141,7 +154,7 @@
                 ctx.strokeStyle = '#003300';
                 ctx.stroke();
 
-                let distance = Math.sqrt(Math.pow(users[cur].pos[0] - user.pos[0], 2) + Math.pow(users[cur].pos[1] - user.pos[1], 2));
+                let distance = Math.sqrt(Math.pow(users[cur].pos.x - user.pos.x, 2) + Math.pow(users[cur].pos.y - user.pos.y, 2));
                 // round to 2 decimal places
                 distance = Math.round(distance * 100) / 100;
 
@@ -151,9 +164,9 @@
                 // TODO do seomthing with the distance
                 // TODO radius based on window or something
                 if (user.isCurrent) { // can now use the pos rather than reget it
-                    ctx.fillText(`(${user.pos[0]}, ${user.pos[1]})`, user.pos[0] + 10, user.pos[1] + 10);
+                    ctx.fillText(`(${user.pos.x}, ${user.pos.y})`, user.pos.x + 10, user.pos.y + 10);
                 } else {
-                    ctx.fillText(distance, user.pos[0] + 10, user.pos[1] + 10);
+                    ctx.fillText(distance, user.pos.x + 10, user.pos.y + 10);
                 }
             }
         }

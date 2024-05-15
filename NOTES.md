@@ -17,3 +17,6 @@ update with changes
 backend needs *will* more than just amp
 front end can compute stuff. might need compute on backend
 doing all on vbackend would be faster
+
+yeah. should compute on backend. otherwise pass amp to back and users to front. and keep doing this
+just do it all on back end. then some stuff on front

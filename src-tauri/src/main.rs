@@ -4,19 +4,22 @@
 use std::{cell::RefCell, thread::sleep};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use serde::Serialize;
 
 struct Settings {
     amplifier: f32,
     users: Vec<User>,
 }
 
+#[derive(Serialize)]
 struct User {
     id: u8,
     name: String,
     pos: Pos,
-    is_current: bool,
+    is_current: bool, // TODO must be camal case or something 
 }
 
+#[derive(Serialize)]
 struct Pos {
     x: f32,
     y: f32,
@@ -89,7 +92,7 @@ fn main() {
         let amp = if let Some(settings) = & *r.lock().unwrap() {
             settings.amplifier
         } else {
-            1.0  
+            1.0
         };
         // fill the output buffer with samples from the ring buffer
         for sample in data {
@@ -121,7 +124,7 @@ fn main() {
 
 	tauri::Builder::default()
         .manage(state)
-        .invoke_handler(tauri::generate_handler![get_amplifier, set_amplifier])
+        .invoke_handler(tauri::generate_handler![get_amplifier, set_amplifier, get_users])
 		.run(tauri::generate_context!())
 		.expect("error while running tauri application");
 
@@ -143,6 +146,15 @@ fn set_amplifier(state: tauri::State<'_, AppState>, value: f32) {
     } else {
         println!("Settings is None, can't set amplifier");
     }
+}
+
+#[tauri::command]
+fn get_users() -> Vec<User> {
+    vec![
+        User { id: 1, name: "John".to_string(), pos: Pos { x: 100.0, y: 100.0 }, is_current: false },
+        User { id: 2, name: "Jane".to_string(), pos: Pos { x: 200.0, y: 200.0 }, is_current: false },
+        User { id: 3, name: "Joey".to_string(), pos: Pos { x: 200.0, y: 250.0 }, is_current: true },
+    ]
 }
 
 fn err_fn(err: cpal::StreamError) {
