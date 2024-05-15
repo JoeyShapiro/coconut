@@ -1,11 +1,12 @@
 <div bind:clientHeight={h}>
     <h1>Welcome to SvelteKit</h1>
     <p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+    <button id="increment-btn">Increment counter</button>
+    <input type="range" min="1" max="100" value="50" class="slider" id="myRange">
 </div>
 
 <div class="container">
     <canvas id="myCanvas" width="{window.innerWidth}" height="{window.innerHeight-h}"></canvas>
-    <button id="increment-btn">Increment counter</button>
 </div>
 
 <script lang="ts">
@@ -96,7 +97,7 @@
             console.log(response);
         }
 
-        const incrementBtn = document.querySelector('#increment-btn');
+        const incrementBtn = document.querySelector('#increment-btn') as HTMLButtonElement;
         incrementBtn.addEventListener('click', () => {
             invoke('set_amplifier', {
                     value: 5.0

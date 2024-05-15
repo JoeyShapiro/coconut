@@ -7,6 +7,19 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
 struct Settings {
     amplifier: f32,
+    users: Vec<User>,
+}
+
+struct User {
+    id: u8,
+    name: String,
+    pos: Pos,
+    is_current: bool,
+}
+
+struct Pos {
+    x: f32,
+    y: f32,
 }
 
 #[derive(Default)]
@@ -64,7 +77,7 @@ fn main() {
     let path = std::env::current_dir().unwrap();
     println!("The current directory is {}", path.display());
 
-    let mut state = AppState(std::sync::Arc::new(std::sync::Mutex::new(Some(Settings { amplifier: 1.0 }))));
+    let mut state = AppState(std::sync::Arc::new(std::sync::Mutex::new(Some(Settings { amplifier: 1.0, users: Vec::new() }))));
 
     // oh its between threads
     // create a mutex
