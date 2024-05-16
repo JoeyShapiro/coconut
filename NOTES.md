@@ -22,3 +22,37 @@ yeah. should compute on backend. otherwise pass amp to back and users to front. 
 just do it all on back end. then some stuff on front
 
 i can pass the current user, pass the index, or check for them
+
+packet models
+```
+version | type | data
+version | sound | user | sample
+```
+
+the problem is i need a stream and events
+i could have an api for getting events, but what if the data (stream) and events are slightly misaligned
+stream will be faster
+i cant have lag or disabled
+so they need to be in the same transfer
+requests are too slow and verbose
+sockets are too... yeah
+
+i could take a note from midi, and prolly other formats
+they do something similar to what i want
+data stream is inferred, this will reduces the chatter; and mark an event when it happens
+
+data example
+```
+version | event | data || version | stream | user 1 | sample | user 2 | sample | user 1 | sample | user 2 | sample
+```
+
+but its 2 way. one thing at a time. all i need rn is the stream
+```
+ex for 2 users
+user 1 | sample | user 2 | sample | ...
+u8     | f32    | u8     | f32    | ...
+```
+u8 is kinda big, but i need this alternating pattern
+it will repeat this cycle
+i can account for failures later. but if the user has no data, it is just 0 for sample
+oh wait, what about udp. i need that. this just got hard
