@@ -2,7 +2,7 @@
     <h1>Welcome to SvelteKit</h1>
     <p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
     <button id="increment-btn">Increment counter</button>
-    <input type="range" min="1" max="100" value="50" class="slider" id="myRange">
+    <input type="range" min="1" max="100" value="{1}" class="slider" id="myRange">
 </div>
 
 <div class="container">
@@ -25,7 +25,7 @@
     class User {
         name: string;
         pos: Pos;
-        isCurrent: boolean; // TODO this
+        isCurrent: boolean;
         constructor(name: string, pos: Pos, isCurrent: boolean = false) {
             this.name = name;
             this.pos = pos;
@@ -36,7 +36,7 @@
     let h = 0;
     let users: User[];
     let selected = -1; // TODO make this 2d
-    let selector: any[][] = [];
+    let selector: Pos[] = [];
     let isSelecting: boolean = false;
     let cur = 2; // good enough for now; better than hardcoding
     onMount(async () => {
@@ -65,8 +65,9 @@
                     return;
                 }
             }
-            selector[0] = [ e.offsetX, e.offsetY ];
-            selector[1] = [];
+            selector = [
+                new Pos( e.offsetX, e.offsetY )
+            ];
             isSelecting = true;
         }, false);
         canvas.addEventListener("mouseup", function (e) {
@@ -75,13 +76,13 @@
                 console.log(`moved users[${selected}] to (${e.offsetX}, ${e.offsetY})`);
                 selected = -1;
             }
-            selector[1] = [ e.offsetX, e.offsetY ];
+            selector[1] = new Pos( e.offsetX, e.offsetY );
             isSelecting = false;
 
             // check if any users are in the selector
             for (let i = 0; i < users.length; i++) {
-                if (users[i].pos.x > selector[0][0] && users[i].pos.x < selector[1][0] &&
-                    users[i].pos.y > selector[0][1] && users[i].pos.y < selector[1][1]) {
+                if (users[i].pos.x > selector[0].x && users[i].pos.x < selector[1].x &&
+                    users[i].pos.y > selector[0].y && users[i].pos.y < selector[1].y) {
                     console.log(`selected users[${i}]`, users[i].name);
                 }
             }
@@ -102,7 +103,7 @@
 
             // set the second point of the selector
             if (isSelecting) {
-                selector[1] = [ e.offsetX, e.offsetY ];
+                selector[1] = new Pos( e.offsetX, e.offsetY );
             }
         }, false);
     
@@ -135,7 +136,7 @@
             // draw the selector
             if (isSelecting && selector.length === 2) {
                 ctx.beginPath();
-                ctx.rect(selector[0][0], selector[0][1], selector[1][0] - selector[0][0], selector[1][1] - selector[0][1]);
+                ctx.rect(selector[0].x, selector[0].y, selector[1].x - selector[0].x, selector[1].y - selector[0].y);
                 ctx.stroke();
             }
 

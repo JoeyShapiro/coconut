@@ -11,7 +11,7 @@ struct Settings {
     users: Vec<User>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct User {
     id: u8,
@@ -20,7 +20,7 @@ struct User {
     is_current: bool, // TODO must be camal case or something 
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 struct Pos {
     x: f32,
     y: f32,
@@ -81,7 +81,7 @@ fn main() {
     let path = std::env::current_dir().unwrap();
     println!("The current directory is {}", path.display());
 
-    let mut state = AppState(std::sync::Arc::new(std::sync::Mutex::new(Some(Settings { amplifier: 1.0, users: Vec::new() }))));
+    let mut state = AppState(std::sync::Arc::new(std::sync::Mutex::new(Some(Settings { amplifier: 1.0, users: fetch_users() }))));
 
     // oh its between threads
     // create a mutex
@@ -150,7 +150,11 @@ fn set_amplifier(state: tauri::State<'_, AppState>, value: f32) {
 }
 
 #[tauri::command]
-fn get_users() -> Vec<User> {
+fn get_users(state: tauri::State<'_, AppState>) -> Vec<User> {
+    state.0.lock().unwrap().as_ref().unwrap().users.clone()
+}
+
+fn fetch_users() -> Vec<User> {
     vec![
         User { id: 1, name: "John".to_string(), pos: Pos { x: 100.0, y: 100.0 }, is_current: false },
         User { id: 2, name: "Jane".to_string(), pos: Pos { x: 200.0, y: 200.0 }, is_current: false },
