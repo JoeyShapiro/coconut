@@ -12,6 +12,7 @@ struct Settings {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct User {
     id: u8,
     name: String,

@@ -20,3 +20,5 @@ doing all on vbackend would be faster
 
 yeah. should compute on backend. otherwise pass amp to back and users to front. and keep doing this
 just do it all on back end. then some stuff on front
+
+i can pass the current user, pass the index, or check for them

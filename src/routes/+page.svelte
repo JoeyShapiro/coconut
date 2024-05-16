@@ -144,7 +144,7 @@
 
                 ctx.beginPath();
                 ctx.arc(user.pos.x, user.pos.y, 10, 0, 2 * Math.PI, false);
-                if (user.isCurrent) {
+                if (user.isCurrent) { // TODO maybe just use cur
                     ctx.fillStyle = 'blue';
                 } else {
                     ctx.fillStyle = 'green';
