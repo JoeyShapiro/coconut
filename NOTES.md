@@ -56,3 +56,13 @@ u8 is kinda big, but i need this alternating pattern
 it will repeat this cycle
 i can account for failures later. but if the user has no data, it is just 0 for sample
 oh wait, what about udp. i need that. this just got hard
+
+u32 1 bit per user?
+what?
+actually, if i send every user, i dont need id
+but if i do dynamic, i do; right right right
+could i do bit stuffing.
+u32 is u1 u2 u3 u4. padded with 0s
+then next n chunks are that user. compact, maybe, but confusing
+actually, i dont think this would save much room. will kinda, but not really
+i think i just have to make sure im not cross packets
