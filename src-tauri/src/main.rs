@@ -4,6 +4,7 @@
 use std::{cell::RefCell, io::Write, os::unix::thread, thread::sleep};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+use ringbuf::producer;
 use serde::Serialize;
 
 struct Settings {
@@ -73,7 +74,7 @@ fn main() {
             }
         }
         if output_fell_behind {
-            eprintln!("output stream fell behind: try increasing latency");
+            eprintln!("output stream fell behind: try increasing latency: {}", input_producer.len());
         }
     };
 
@@ -112,7 +113,8 @@ fn main() {
             };
         }
         if input_fell_behind {
-            eprintln!("input stream fell behind: try increasing latency");
+            eprintln!("input stream fell behind: try increasing latency {}", output_consumer.len());
+            sleep(std::time::Duration::from_millis(100));
         }
     };
 
@@ -124,29 +126,32 @@ fn main() {
     //         };
     //     }
     // };
-
     let mut oscillator = Oscillator {
         waveform: Waveform::Sine,
         sample_rate: config.sample_rate.0 as f32,
         current_sample_index: 0.0,
         frequency_hz: 440.0,
     };
-    let time_at_start = std::time::Instant::now();
 
     let connection = std::sync::Arc::new(std::sync::Mutex::new(Some(Connection::new(0, 0).unwrap())));
+    let conn_ring = ringbuf::HeapRb::<f32>::new(latency_samples * 2);
+    let (mut conn_producer, mut conn_consumer) = conn_ring.split();
+
 
     let r_conn_tx = std::sync::Arc::clone(&connection);
     std::thread::spawn(move || {
-        let mut binding = r_conn_tx.lock().unwrap();
-        let conn = match &mut *binding {
-            Some(c) => c,
-            None => {
-                eprintln!("Connection is None, can't send data");
-                return;
-            }
-        };
+        println!("Starting the tx thread");
 
         loop {
+            let mut binding = r_conn_tx.lock().unwrap();
+            let conn = match &mut *binding {
+                Some(c) => c,
+                None => {
+                    eprintln!("Connection is None, can't send data");
+                    return;
+                }
+            };
+
             let data = match input_consumer.pop() {
                 Some(s) => s,
                 None => 0.0,
@@ -159,16 +164,20 @@ fn main() {
 
     let r_conn_rx = std::sync::Arc::clone(&connection);
     std::thread::spawn(move || {
-        let mut binding = r_conn_rx.lock().unwrap();
-        let conn = match &mut *binding {
-            Some(c) => c,
-            None => {
-                eprintln!("Connection is None, can't send data");
-                return;
-            }
-        };
+        println!("Starting the rx thread");
 
         loop {
+            let time_at_start = std::time::Instant::now();
+
+            let mut binding = r_conn_rx.lock().unwrap();
+            let conn = match &mut *binding {
+                Some(c) => c,
+                None => {
+                    eprintln!("Connection is None, can't send data");
+                    return;
+                }
+            };
+            
             let time_since_start = std::time::Instant::now()
                 .duration_since(time_at_start)
                 .as_secs_f32();
@@ -193,7 +202,7 @@ fn main() {
                 }
             }
             if output_fell_behind {
-                eprintln!("output stream fell behind: try increasing latency");
+                eprintln!("output stream fell behind: try increasing latency {}", output_producer.len());
             }
         }
     });
