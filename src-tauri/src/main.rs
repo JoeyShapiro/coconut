@@ -313,7 +313,7 @@ struct Packet {
 
 impl Connection {
     fn new(version: u8, id: u8) -> Result<Self, std::io::Error> {
-        let stream = std::net::TcpStream::connect("127.0.0.1:34254")?;
+        let stream = std::net::TcpStream::connect("127.0.0.1:42069")?;
         Ok(Self { stream, version, id })
     }
 
