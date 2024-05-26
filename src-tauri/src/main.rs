@@ -133,35 +133,19 @@ fn main() {
     };
     let time_at_start = std::time::Instant::now();
 
-    let rx_data_fn = move |data: &[f32], _: &cpal::InputCallbackInfo| {
-        let time_since_start = std::time::Instant::now()
-            .duration_since(time_at_start)
-            .as_secs_f32();
-        if time_since_start < 1.0 {
-            oscillator.set_waveform(Waveform::Sine);
-        } else if time_since_start < 2.0 {
-            oscillator.set_waveform(Waveform::Triangle);
-        } else if time_since_start < 3.0 {
-            oscillator.set_waveform(Waveform::Square);
-        } else if time_since_start < 4.0 {
-            oscillator.set_waveform(Waveform::Saw);
-        } else {
-            oscillator.set_waveform(Waveform::Sine);
-        }
+    let connection = std::sync::Arc::new(std::sync::Mutex::new(Some(Connection::new(0, 0).unwrap())));
 
-        let mut output_fell_behind = false;
-        // push the samples into the ring buffer
-        for &sample in data {
-            if output_producer.push(oscillator.tick() * 0.3).is_err() {
-                output_fell_behind = true;
-            }
-        }
-        if output_fell_behind {
-            eprintln!("output stream fell behind: try increasing latency");
-        }
-    };
-
+    let r_conn_tx = std::sync::Arc::clone(&connection);
     std::thread::spawn(move || {
+        let mut binding = r_conn_tx.lock().unwrap();
+        let conn = match &mut *binding {
+            Some(c) => c,
+            None => {
+                eprintln!("Connection is None, can't send data");
+                return;
+            }
+        };
+
         loop {
             let data = match input_consumer.pop() {
                 Some(s) => s,
@@ -169,7 +153,48 @@ fn main() {
             };
 
             // "send" the data
+            conn.tx_data(vec![data]).unwrap();
+        }
+    });
 
+    let r_conn_rx = std::sync::Arc::clone(&connection);
+    std::thread::spawn(move || {
+        let mut binding = r_conn_rx.lock().unwrap();
+        let conn = match &mut *binding {
+            Some(c) => c,
+            None => {
+                eprintln!("Connection is None, can't send data");
+                return;
+            }
+        };
+
+        loop {
+            let time_since_start = std::time::Instant::now()
+                .duration_since(time_at_start)
+                .as_secs_f32();
+            if time_since_start < 1.0 {
+                oscillator.set_waveform(Waveform::Sine);
+            } else if time_since_start < 2.0 {
+                oscillator.set_waveform(Waveform::Triangle);
+            } else if time_since_start < 3.0 {
+                oscillator.set_waveform(Waveform::Square);
+            } else if time_since_start < 4.0 {
+                oscillator.set_waveform(Waveform::Saw);
+            } else {
+                oscillator.set_waveform(Waveform::Sine);
+            }
+
+            let mut output_fell_behind = false;
+            // push the samples into the ring buffer
+            let mut data = conn.rx_data();
+            while let Some(sample) = data.pop() {
+                if output_producer.push(oscillator.tick() * 0.3).is_err() {
+                    output_fell_behind = true;
+                }
+            }
+            if output_fell_behind {
+                eprintln!("output stream fell behind: try increasing latency");
+            }
         }
     });
 
@@ -301,7 +326,7 @@ impl Oscillator {
 // data tx / rx
 
 struct Connection {
-    stream: std::net::TcpStream,
+    // stream: std::net::TcpStream,
     version: u8,
     id: u8,
 }
@@ -313,18 +338,22 @@ struct Packet {
 
 impl Connection {
     fn new(version: u8, id: u8) -> Result<Self, std::io::Error> {
-        let stream = std::net::TcpStream::connect("127.0.0.1:42069")?;
-        Ok(Self { stream, version, id })
+        // let stream = std::net::TcpStream::connect("127.0.0.1:42069")?;
+        Ok(Self {  version, id })
     }
 
-    fn rx_data(&mut self) -> Packet {
+    fn rx_data(&mut self) -> Vec<Packet> {
         // receive the data
-        Packet { id: 0, data: vec![] }
+        let mut data = vec![Packet { id: 0, data: vec![] }];
+        for i in 0..512 {
+            data.push(Packet { id: 0, data: vec![0.0] });
+        }
+        data
     }
 
     fn tx_data(&mut self, data: Vec<f32>) -> Result<(), std::io::Error> {
         // send the data
-        self.stream.write(&vec![])?;
+        // self.stream.write(&vec![])?;
         Ok(())
     }
 }
