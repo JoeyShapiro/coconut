@@ -7,7 +7,7 @@ pub struct Connection {
 }
 
 pub struct Packet {
-    id: u8,
+    pub id: u8,
     data: Vec<f32>,
 }
 
@@ -21,7 +21,7 @@ impl Connection {
         // receive the data
         let mut data: Vec<Packet> = vec![];
         for _ in 0..512 {
-            data.push(Packet { id: 0, data: vec![0.0] });
+            data.push(Packet { id: 1, data: vec![0.0] });
         }
         data
     }

@@ -11,10 +11,11 @@ use serde::Serialize;
 
 use crate::oscillator::{Oscillator, Waveform};
 use crate::connection::{Connection, Packet};
+use std::collections::HashMap;
 
 struct Settings {
     amplifier: f32,
-    users: Vec<User>,
+    users: HashMap<u8, User>,
 }
 
 #[derive(Serialize, Clone)]
@@ -23,8 +24,10 @@ struct User {
     id: u8,
     name: String,
     pos: Pos,
-    is_current: bool, // TODO must be camal case or something 
+    is_current: bool, // TODO must be camal case or something
     // TODO add amp and stuff, so i dont have to do it every time
+    amp: f32,
+    theta: f32,
 }
 
 #[derive(Serialize, Clone)]
@@ -125,21 +128,6 @@ fn main() {
         }
     };
 
-    // let tx_data_fn = move |data: &mut [f32]| {
-    //     for sample in data {
-    //         *sample = match input_consumer.pop() {
-    //             Some(s) => s,
-    //             None => 0.0,
-    //         };
-    //     }
-    // };
-    let mut oscillator = Oscillator {
-        waveform: Waveform::Sine,
-        sample_rate: config.sample_rate.0 as f32,
-        current_sample_index: 0.0,
-        frequency_hz: 220.0,
-    };
-
     let connection = std::sync::Arc::new(std::sync::Mutex::new(Some(Connection::new(0, 0).unwrap())));
     // let conn_ring = ringbuf::HeapRb::<f32>::new(latency_samples * 2);
     // let (mut conn_producer, mut conn_consumer) = conn_ring.split();
@@ -179,27 +167,21 @@ fn main() {
     });
 
     let r_conn_rx = std::sync::Arc::clone(&connection);
+    let r_state_rx = std::sync::Arc::clone(&state.0);
     std::thread::spawn(move || {
         println!("Starting the rx thread");
-        // let time_at_start = std::time::Instant::now();
+        let mut oscillator = Oscillator {
+            waveform: Waveform::Sine,
+            sample_rate: config.sample_rate.0 as f32,
+            current_sample_index: 0.0,
+            frequency_hz: 220.0,
+        };
 
+        // TODO maybe make 0 either no one, or the current user. the current user should never be sent
+        // lol i already did thi
+        let mut user = User { id: 0, name: "".to_string(), pos: Pos { x: 0.0, y: 0.0 }, is_current: false, amp: 1.0, theta: 0.0 };
         loop {
             // println!("4: rx: waiting for data");
-            
-            // let time_since_start = std::time::Instant::now()
-            //     .duration_since(time_at_start)
-            //     .as_secs_f32();
-            // if time_since_start < 1.0 {
-            //     oscillator.set_waveform(Waveform::Sine);
-            // } else if time_since_start < 2.0 {
-            //     oscillator.set_waveform(Waveform::Triangle);
-            // } else if time_since_start < 3.0 {
-            //     oscillator.set_waveform(Waveform::Square);
-            // } else if time_since_start < 4.0 {
-            //     oscillator.set_waveform(Waveform::Saw);
-            // } else {
-            //     oscillator.set_waveform(Waveform::Sine);
-            // }
 
             let mut output_fell_behind = false;
             // push the samples into the ring buffer
@@ -216,13 +198,23 @@ fn main() {
                 data = conn.rx_data();
             }
 
-            // output_consumer.free_len() > 0
-            // while output_producer.len() != 0 {
-            //     sleep(std::time::Duration::from_millis(1));
-            // }
+            let users = if let Some(settings) = & *r_state_rx.lock().unwrap() {
+                settings.users.clone() // TODO even though its not a lot. dont clone
+            } else {
+                HashMap::new()
+            };
 
-            while let Some(sample) = data.pop() {
-                if output_producer.push(oscillator.tick() * 0.1).is_err() {
+            while let Some(packet) = data.pop() {
+                // TODO make a map of the users
+                // let user = users.get(&packet.id).unwrap();
+                if packet.id != user.id {
+                    user = users.get(&packet.id).unwrap_or_else(|| {
+                        eprintln!("rx: user not found: {}", packet.id);
+                        &user
+                    }).clone();
+                }
+
+                if output_producer.push(oscillator.tick() * user.amp).is_err() {
                     output_fell_behind = true;
                 }
 
@@ -276,16 +268,16 @@ fn set_amplifier(state: tauri::State<'_, AppState>, value: f32) {
 }
 
 #[tauri::command]
-fn get_users(state: tauri::State<'_, AppState>) -> Vec<User> {
+fn get_users(state: tauri::State<'_, AppState>) -> HashMap<u8, User> {
     state.0.lock().unwrap().as_ref().unwrap().users.clone()
 }
 
-fn fetch_users() -> Vec<User> {
+fn fetch_users() -> HashMap<u8, User> {
     vec![
-        User { id: 1, name: "John".to_string(), pos: Pos { x: 100.0, y: 100.0 }, is_current: false },
-        User { id: 2, name: "Jane".to_string(), pos: Pos { x: 200.0, y: 200.0 }, is_current: false },
-        User { id: 3, name: "Joey".to_string(), pos: Pos { x: 200.0, y: 250.0 }, is_current: true },
-    ]
+        User { id: 1, name: "John".to_string(), pos: Pos { x: 100.0, y: 100.0 }, is_current: false, amp: 1.0, theta: 0.0},
+        User { id: 2, name: "Jane".to_string(), pos: Pos { x: 200.0, y: 200.0 }, is_current: false, amp: 1.0, theta: 0.0},
+        User { id: 3, name: "Joey".to_string(), pos: Pos { x: 200.0, y: 250.0 }, is_current: true, amp: 0.0, theta: 0.0},
+    ].into_iter().map(|u| (u.id, u)).collect()
 }
 
 fn err_fn(err: cpal::StreamError) {
