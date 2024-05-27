@@ -4,7 +4,6 @@
 use std::{cell::RefCell, io::Write, os::unix::thread, process::exit, thread::sleep};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use ringbuf::producer;
 use serde::Serialize;
 
 struct Settings {
@@ -66,7 +65,7 @@ fn main() {
     }
 
     let input_data_fn = move |data: &[f32], _: &cpal::InputCallbackInfo| {
-        println!("1: input data fn");
+        // println!("1: input data fn");
         let mut output_fell_behind = false;
         // push the samples into the ring buffer
         for &sample in data {
@@ -94,7 +93,7 @@ fn main() {
     // cloning a reference?
     let r = std::sync::Arc::clone(&state.0);
     let output_data_fn = move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
-        println!("2: output data fn");
+        // println!("2: output data fn");
         let mut input_fell_behind = false;
         // get the amplifier from the settings or default to 1.0
         let amp = if let Some(settings) = & *r.lock().unwrap() {
@@ -136,8 +135,10 @@ fn main() {
     };
 
     let connection = std::sync::Arc::new(std::sync::Mutex::new(Some(Connection::new(0, 0).unwrap())));
-    let conn_ring = ringbuf::HeapRb::<f32>::new(latency_samples * 2);
-    let (mut conn_producer, mut conn_consumer) = conn_ring.split();
+    // let conn_ring = ringbuf::HeapRb::<f32>::new(latency_samples * 2);
+    // let (mut conn_producer, mut conn_consumer) = conn_ring.split();
+    // push tx pop rx. i dont think thats how it works. i would need 2 ring buffers
+    // i think it is more for cross thread communication
 
 
     let r_conn_tx = std::sync::Arc::clone(&connection);
@@ -174,10 +175,10 @@ fn main() {
     let r_conn_rx = std::sync::Arc::clone(&connection);
     std::thread::spawn(move || {
         println!("Starting the rx thread");
-        let time_at_start = std::time::Instant::now();
+        // let time_at_start = std::time::Instant::now();
 
         loop {
-            println!("4: rx: waiting for data");
+            // println!("4: rx: waiting for data");
             
             // let time_since_start = std::time::Instant::now()
             //     .duration_since(time_at_start)
@@ -377,8 +378,8 @@ impl Connection {
 
     fn rx_data(&mut self) -> Vec<Packet> {
         // receive the data
-        let mut data = vec![Packet { id: 0, data: vec![] }];
-        for i in 0..512 {
+        let mut data: Vec<Packet> = vec![];
+        for _ in 0..512 {
             data.push(Packet { id: 0, data: vec![0.0] });
         }
         data
