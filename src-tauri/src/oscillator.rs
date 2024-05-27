@@ -17,9 +17,9 @@ impl Oscillator {
         self.current_sample_index = (self.current_sample_index + 1.0) % self.sample_rate;
     }
 
-    fn set_waveform(&mut self, waveform: Waveform) {
-        self.waveform = waveform;
-    }
+    // fn set_waveform(&mut self, waveform: Waveform) {
+    //     self.waveform = waveform;
+    // }
 
     fn calculate_sine_output_from_freq(&self, freq: f32) -> f32 {
         let two_pi = 2.0 * std::f32::consts::PI;

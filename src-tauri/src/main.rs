@@ -4,7 +4,7 @@
 pub mod oscillator;
 pub mod connection;
 
-use std::{cell::RefCell, io::Write, os::unix::thread, process::exit, thread::sleep};
+use std::{process::exit, thread::sleep};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use serde::Serialize;
