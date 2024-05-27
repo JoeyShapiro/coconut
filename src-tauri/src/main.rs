@@ -208,13 +208,23 @@ fn main() {
                 };
                 data = conn.rx_data();
             }
+
+            // output_consumer.free_len() > 0
+            // while output_producer.len() != 0 {
+            //     sleep(std::time::Duration::from_millis(1));
+            // }
+
             while let Some(sample) = data.pop() {
                 if output_producer.push(oscillator.tick() * 0.1).is_err() {
                     output_fell_behind = true;
                 }
+
+                // wait for the output buffer to have space
+                while output_producer.free_len() == 0 {
+                    sleep(std::time::Duration::from_millis(1));
+                }
             }
 
-            sleep(std::time::Duration::from_millis(20));
             if output_fell_behind {
                 eprintln!("rx: output stream fell behind: try increasing latency {}", output_producer.len());
             }
