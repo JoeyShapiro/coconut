@@ -145,7 +145,7 @@ fn main() {
         println!("Starting the tx thread");
 
         loop {
-            println!("3: tx: waiting for data");
+            // println!("3: tx: waiting for data");
 
             let mut data: Vec<f32> = vec![];
             for _ in 0..512 {
@@ -196,7 +196,7 @@ fn main() {
 
             let mut output_fell_behind = false;
             // push the samples into the ring buffer
-            let mut data: Vec<Packet> = vec![];
+            let mut data: Vec<Packet>;
             {
                 let mut binding = r_conn_rx.lock().unwrap();
                 let conn = match &mut *binding {
@@ -214,7 +214,7 @@ fn main() {
                 }
             }
 
-            sleep(std::time::Duration::from_millis(12));
+            sleep(std::time::Duration::from_millis(20));
             if output_fell_behind {
                 eprintln!("rx: output stream fell behind: try increasing latency {}", output_producer.len());
             }
@@ -375,7 +375,7 @@ impl Connection {
     }
 
     fn tx_data(&mut self, data: Vec<f32>) -> Result<(), std::io::Error> {
-        println!("tx: sending data {}", data.len());
+        // println!("tx: sending data {}", data.len());
         // send the data
         // self.stream.write(&vec![])?;
         Ok(())
