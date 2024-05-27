@@ -132,7 +132,7 @@ fn main() {
         waveform: Waveform::Sine,
         sample_rate: config.sample_rate.0 as f32,
         current_sample_index: 0.0,
-        frequency_hz: 440.0,
+        frequency_hz: 220.0,
     };
 
     let connection = std::sync::Arc::new(std::sync::Mutex::new(Some(Connection::new(0, 0).unwrap())));
@@ -146,14 +146,6 @@ fn main() {
 
         loop {
             println!("3: tx: waiting for data");
-            let mut binding = r_conn_tx.lock().unwrap();
-            let conn = match &mut *binding {
-                Some(c) => c,
-                None => {
-                    eprintln!("Connection is None, can't send data");
-                    return;
-                }
-            };
 
             let mut data: Vec<f32> = vec![];
             for _ in 0..512 {
@@ -164,8 +156,18 @@ fn main() {
                 data.push(d);
             }
 
-            // "send" the data
-            conn.tx_data(data).unwrap();
+            {
+                let mut binding = r_conn_tx.lock().unwrap();
+                let conn = match &mut *binding {
+                    Some(c) => c,
+                    None => {
+                        eprintln!("Connection is None, can't send data");
+                        return;
+                    }
+                };
+                // "send" the data
+                conn.tx_data(data).unwrap();
+            }
         }
     });
 
@@ -176,39 +178,42 @@ fn main() {
 
         loop {
             println!("4: rx: waiting for data");
-
-            let mut binding = r_conn_rx.lock().unwrap();
-            let conn = match &mut *binding {
-                Some(c) => c,
-                None => {
-                    eprintln!("Connection is None, can't send data");
-                    return;
-                }
-            };
             
-            let time_since_start = std::time::Instant::now()
-                .duration_since(time_at_start)
-                .as_secs_f32();
-            if time_since_start < 1.0 {
-                oscillator.set_waveform(Waveform::Sine);
-            } else if time_since_start < 2.0 {
-                oscillator.set_waveform(Waveform::Triangle);
-            } else if time_since_start < 3.0 {
-                oscillator.set_waveform(Waveform::Square);
-            } else if time_since_start < 4.0 {
-                oscillator.set_waveform(Waveform::Saw);
-            } else {
-                oscillator.set_waveform(Waveform::Sine);
-            }
+            // let time_since_start = std::time::Instant::now()
+            //     .duration_since(time_at_start)
+            //     .as_secs_f32();
+            // if time_since_start < 1.0 {
+            //     oscillator.set_waveform(Waveform::Sine);
+            // } else if time_since_start < 2.0 {
+            //     oscillator.set_waveform(Waveform::Triangle);
+            // } else if time_since_start < 3.0 {
+            //     oscillator.set_waveform(Waveform::Square);
+            // } else if time_since_start < 4.0 {
+            //     oscillator.set_waveform(Waveform::Saw);
+            // } else {
+            //     oscillator.set_waveform(Waveform::Sine);
+            // }
 
             let mut output_fell_behind = false;
             // push the samples into the ring buffer
-            let mut data = conn.rx_data();
+            let mut data: Vec<Packet> = vec![];
+            {
+                let mut binding = r_conn_rx.lock().unwrap();
+                let conn = match &mut *binding {
+                    Some(c) => c,
+                    None => {
+                        eprintln!("Connection is None, can't send data");
+                        return;
+                    }
+                };
+                data = conn.rx_data();
+            }
             while let Some(sample) = data.pop() {
-                if output_producer.push(oscillator.tick() * 0.3).is_err() {
+                if output_producer.push(oscillator.tick() * 0.1).is_err() {
                     output_fell_behind = true;
                 }
             }
+
             sleep(std::time::Duration::from_millis(12));
             if output_fell_behind {
                 eprintln!("rx: output stream fell behind: try increasing latency {}", output_producer.len());
