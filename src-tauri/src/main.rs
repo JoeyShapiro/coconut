@@ -1,7 +1,7 @@
 // Prevents additional console window on Windows in release, DO NOT REMOVE!!
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use std::{cell::RefCell, io::Write, os::unix::thread, thread::sleep};
+use std::{cell::RefCell, io::Write, os::unix::thread, process::exit, thread::sleep};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use ringbuf::producer;
@@ -66,6 +66,7 @@ fn main() {
     }
 
     let input_data_fn = move |data: &[f32], _: &cpal::InputCallbackInfo| {
+        println!("1: input data fn");
         let mut output_fell_behind = false;
         // push the samples into the ring buffer
         for &sample in data {
@@ -74,7 +75,8 @@ fn main() {
             }
         }
         if output_fell_behind {
-            eprintln!("output stream fell behind: try increasing latency: {}", input_producer.len());
+            eprintln!("input fn: output stream fell behind: try increasing latency: {}", input_producer.len());
+            exit(1);
         }
     };
 
@@ -92,6 +94,7 @@ fn main() {
     // cloning a reference?
     let r = std::sync::Arc::clone(&state.0);
     let output_data_fn = move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
+        println!("2: output data fn");
         let mut input_fell_behind = false;
         // get the amplifier from the settings or default to 1.0
         let amp = if let Some(settings) = & *r.lock().unwrap() {
@@ -113,8 +116,7 @@ fn main() {
             };
         }
         if input_fell_behind {
-            eprintln!("input stream fell behind: try increasing latency {}", output_consumer.len());
-            sleep(std::time::Duration::from_millis(100));
+            eprintln!("output fn: input stream fell behind: try increasing latency {}", output_consumer.len());
         }
     };
 
@@ -143,6 +145,7 @@ fn main() {
         println!("Starting the tx thread");
 
         loop {
+            println!("3: tx: waiting for data");
             let mut binding = r_conn_tx.lock().unwrap();
             let conn = match &mut *binding {
                 Some(c) => c,
@@ -152,22 +155,27 @@ fn main() {
                 }
             };
 
-            let data = match input_consumer.pop() {
-                Some(s) => s,
-                None => 0.0,
-            };
+            let mut data: Vec<f32> = vec![];
+            for _ in 0..512 {
+                let d = match input_consumer.pop() {
+                    Some(s) => s,
+                    None => 0.0,
+                };
+                data.push(d);
+            }
 
             // "send" the data
-            conn.tx_data(vec![data]).unwrap();
+            conn.tx_data(data).unwrap();
         }
     });
 
     let r_conn_rx = std::sync::Arc::clone(&connection);
     std::thread::spawn(move || {
         println!("Starting the rx thread");
+        let time_at_start = std::time::Instant::now();
 
         loop {
-            let time_at_start = std::time::Instant::now();
+            println!("4: rx: waiting for data");
 
             let mut binding = r_conn_rx.lock().unwrap();
             let conn = match &mut *binding {
@@ -201,8 +209,9 @@ fn main() {
                     output_fell_behind = true;
                 }
             }
+            sleep(std::time::Duration::from_millis(12));
             if output_fell_behind {
-                eprintln!("output stream fell behind: try increasing latency {}", output_producer.len());
+                eprintln!("rx: output stream fell behind: try increasing latency {}", output_producer.len());
             }
         }
     });
@@ -361,6 +370,7 @@ impl Connection {
     }
 
     fn tx_data(&mut self, data: Vec<f32>) -> Result<(), std::io::Error> {
+        println!("tx: sending data {}", data.len());
         // send the data
         // self.stream.write(&vec![])?;
         Ok(())
