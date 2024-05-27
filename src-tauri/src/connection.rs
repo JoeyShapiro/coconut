@@ -23,6 +23,9 @@ impl Connection {
         for _ in 0..512 {
             data.push(Packet { id: 1, data: vec![0.0] });
         }
+        for _ in 0..512 {
+            data.push(Packet { id: 2, data: vec![0.0] });
+        }
         data
     }
 

@@ -15,7 +15,7 @@ use std::collections::HashMap;
 
 struct Settings {
     amplifier: f32,
-    users: HashMap<u8, User>,
+    users: HashMap<u8, User>, // TODO this could actually be a vec
 }
 
 #[derive(Serialize, Clone)]
@@ -205,8 +205,6 @@ fn main() {
             };
 
             while let Some(packet) = data.pop() {
-                // TODO make a map of the users
-                // let user = users.get(&packet.id).unwrap();
                 if packet.id != user.id {
                     user = users.get(&packet.id).unwrap_or_else(|| {
                         eprintln!("rx: user not found: {}", packet.id);
@@ -268,14 +266,14 @@ fn set_amplifier(state: tauri::State<'_, AppState>, value: f32) {
 }
 
 #[tauri::command]
-fn get_users(state: tauri::State<'_, AppState>) -> HashMap<u8, User> {
-    state.0.lock().unwrap().as_ref().unwrap().users.clone()
+fn get_users(state: tauri::State<'_, AppState>) -> Vec<User> {
+    state.0.lock().unwrap().as_ref().unwrap().users.clone().into_iter().map(|(_, u)| u).collect()
 }
 
 fn fetch_users() -> HashMap<u8, User> {
     vec![
         User { id: 1, name: "John".to_string(), pos: Pos { x: 100.0, y: 100.0 }, is_current: false, amp: 1.0, theta: 0.0},
-        User { id: 2, name: "Jane".to_string(), pos: Pos { x: 200.0, y: 200.0 }, is_current: false, amp: 1.0, theta: 0.0},
+        User { id: 2, name: "Jane".to_string(), pos: Pos { x: 200.0, y: 200.0 }, is_current: false, amp: 0.5, theta: 0.0},
         User { id: 3, name: "Joey".to_string(), pos: Pos { x: 200.0, y: 250.0 }, is_current: true, amp: 0.0, theta: 0.0},
     ].into_iter().map(|u| (u.id, u)).collect()
 }
