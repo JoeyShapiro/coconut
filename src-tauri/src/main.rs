@@ -15,7 +15,7 @@ use std::collections::HashMap;
 
 struct Settings {
     amplifier: f32,
-    users: HashMap<u8, User>, // TODO this could actually be a vec
+    users: HashMap<u8, User>, // TODO this could actually be a vec. actually just do an array. then id is the index. that will work
 }
 
 #[derive(Serialize, Clone)]
@@ -204,15 +204,39 @@ fn main() {
                 HashMap::new()
             };
 
+            /*
+                rx: user changed: 1 -> 2 0 1023  // when it first starts, so i is 0
+                rx: user changed: 2 -> 1 512 511 // half way though
+                512                              // at the end
+                rx: user changed: 1 -> 2 0 1023
+                rx: user changed: 2 -> 1 512 511
+                512
+             */
+            // AHA the loop was backwards, because of this push/pop thing; and id 1 is going last, meaning its doing a sine wave
+            // combine all the users into one wave
+            // we can loop through all the data, since we have it all
+            // TODO something with 2 users. also just one is kinda blurry. i might have to go back. i can just do a stash though
+            let mut samples: [f32; 512] = [0.0; 512];
+            let mut i = 512;
             while let Some(packet) = data.pop() {
                 if packet.id != user.id {
+                    println!("rx: user changed: {} -> {} {} {}", user.id, packet.id, i, data.len());
                     user = users.get(&packet.id).unwrap_or_else(|| {
                         eprintln!("rx: user not found: {}", packet.id);
                         &user
                     }).clone();
+                    i = 512; // TODO is it really backwards
                 }
+                i -= 1;
 
-                if output_producer.push(oscillator.tick() * user.amp).is_err() {
+                samples[i] = oscillator.tick() * user.amp;
+            }
+
+            // println!("{:?}", samples);
+            // exit(1);
+
+            for sample in samples.iter() {
+                if output_producer.push(*sample).is_err() {
                     output_fell_behind = true;
                 }
 
@@ -272,8 +296,8 @@ fn get_users(state: tauri::State<'_, AppState>) -> Vec<User> {
 
 fn fetch_users() -> HashMap<u8, User> {
     vec![
-        User { id: 1, name: "John".to_string(), pos: Pos { x: 100.0, y: 100.0 }, is_current: false, amp: 1.0, theta: 0.0},
-        User { id: 2, name: "Jane".to_string(), pos: Pos { x: 200.0, y: 200.0 }, is_current: false, amp: 0.5, theta: 0.0},
+        User { id: 1, name: "John".to_string(), pos: Pos { x: 100.0, y: 100.0 }, is_current: false, amp: 0.1, theta: 0.0},
+        User { id: 2, name: "Jane".to_string(), pos: Pos { x: 200.0, y: 200.0 }, is_current: false, amp: 0.0, theta: 0.0},
         User { id: 3, name: "Joey".to_string(), pos: Pos { x: 200.0, y: 250.0 }, is_current: true, amp: 0.0, theta: 0.0},
     ].into_iter().map(|u| (u.id, u)).collect()
 }
