@@ -226,6 +226,7 @@ fn main() {
                         &user
                     }).clone();
                     i = 512; // TODO is it really backwards
+                    oscillator.rewind(samples.len() as i32);
                 }
                 i -= 1;
 

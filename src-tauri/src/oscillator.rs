@@ -17,6 +17,10 @@ impl Oscillator {
         self.current_sample_index = (self.current_sample_index + 1.0) % self.sample_rate;
     }
 
+    fn recede_sample(&mut self) {
+        self.current_sample_index = (self.current_sample_index - 1.0) % self.sample_rate;
+    }
+
     // fn set_waveform(&mut self, waveform: Waveform) {
     //     self.waveform = waveform;
     // }
@@ -65,6 +69,12 @@ impl Oscillator {
             Waveform::Square => self.square_wave(),
             Waveform::Saw => self.saw_wave(),
             Waveform::Triangle => self.triangle_wave(),
+        }
+    }
+
+    pub fn rewind(&mut self, samples: i32) {
+        for _ in 0..samples {
+            self.recede_sample();
         }
     }
 }
