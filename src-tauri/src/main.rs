@@ -14,7 +14,7 @@ use crate::connection::{Connection, Packet};
 use std::collections::HashMap;
 
 struct Settings {
-    amplifier: f32,
+    volume: f32,
     map_width: u32,
     map_height: u32,
     player_id: u8,
@@ -101,7 +101,7 @@ fn main() {
     let users = fetch_users();
     let player_id = users.values().find(|&u| u.is_current).unwrap().id;
     let mut state = AppState(std::sync::Arc::new(std::sync::Mutex::new(Some(
-        Settings { amplifier: 1.0, map_width: 1280, map_height: 720, player_id, users }
+        Settings { volume: 0.0, map_width: 1280, map_height: 720, player_id, users }
     ))));
 
     // oh its between threads
@@ -113,7 +113,7 @@ fn main() {
         let mut input_fell_behind = false;
         // get the amplifier from the settings or default to 1.0
         let amp = if let Some(settings) = & *r.lock().unwrap() {
-            settings.amplifier
+            settings.volume / 100.0
         } else {
             1.0
         };
@@ -273,7 +273,7 @@ fn main() {
 
 	tauri::Builder::default()
         .manage(state)
-        .invoke_handler(tauri::generate_handler![get_amplifier, set_amplifier, get_users, user_update])
+        .invoke_handler(tauri::generate_handler![get_amplifier, set_volume, get_users, user_update])
 		.run(tauri::generate_context!())
 		.expect("error while running tauri application");
 
@@ -288,10 +288,9 @@ fn get_amplifier() -> f32 {
 }
 
 #[tauri::command]
-fn set_amplifier(state: tauri::State<'_, AppState>, value: f32) {
+fn set_volume(state: tauri::State<'_, AppState>, value: f32) {
     if let Some(settings) = &mut *state.0.lock().unwrap() {
-        settings.amplifier = value;
-        println!("Amplifier: {}", value);
+        settings.volume = value;
     } else {
         println!("Settings is None, can't set amplifier");
     }

@@ -2,7 +2,7 @@
     <h1>Welcome to SvelteKit</h1>
     <p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
     <button id="increment-btn">Increment counter</button>
-    <input type="range" min="1" max="100" value="{1}" class="slider" id="myRange">
+    <input type="range" min="1" max="100" value="{0}" class="volume" id="volume">
 </div>
 
 <div class="container">
@@ -131,6 +131,15 @@
         incrementBtn.addEventListener('click', () => {
             invoke('set_amplifier', {
                     value: 5.0
+                })
+                .then(updateResponse)
+                .catch(updateResponse)
+        });
+
+        const volume = document.querySelector('#volume') as HTMLInputElement;
+        volume.addEventListener('input', () => {
+            invoke('set_volume', {
+                    value: parseFloat(volume.value)
                 })
                 .then(updateResponse)
                 .catch(updateResponse)
