@@ -318,7 +318,7 @@ fn user_update(state: tauri::State<'_, AppState>, id: u8, user: User) {
 
 fn fetch_users() -> HashMap<u8, User> {
     vec![
-        User { id: 1, name: "John".to_string(), pos: Pos { x: 100.0, y: 100.0 }, is_current: false, amp: 0.1, theta: 0.0},
+        User { id: 1, name: "John".to_string(), pos: Pos { x: 100.0, y: 100.0 }, is_current: false, amp: 0.0, theta: 0.0},
         User { id: 2, name: "Jane".to_string(), pos: Pos { x: 200.0, y: 200.0 }, is_current: false, amp: 0.0, theta: 0.0},
         User { id: 3, name: "Joey".to_string(), pos: Pos { x: 200.0, y: 250.0 }, is_current: true, amp: 0.0, theta: 0.0},
     ].into_iter().map(|u| (u.id, u)).collect()

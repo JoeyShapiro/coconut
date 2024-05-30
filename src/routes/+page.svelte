@@ -23,12 +23,14 @@
     }
 
     class User {
+        id: number;
         name: string;
         pos: Pos;
         isCurrent: boolean;
         amp: number;
         theta: number;
-        constructor(name: string, pos: Pos, isCurrent: boolean = false, amp: number = 0, theta: number = 0) {
+        constructor(id: number, name: string, pos: Pos, isCurrent: boolean = false, amp: number = 0, theta: number = 0) {
+            this.id = id;
             this.name = name;
             this.pos = pos;
             this.isCurrent = isCurrent;
@@ -56,6 +58,18 @@
             console.error(error);
             return [] as User[];
         });
+        cur = users.findIndex((user) => user.isCurrent);
+        for (const user of users) {
+            let distance = Math.sqrt(Math.pow(users[cur].pos.x - user.pos.x, 2) + Math.pow(users[cur].pos.y - user.pos.y, 2));
+            let theta = Math.atan2(user.pos.y - users[cur].pos.y, user.pos.x - users[cur].pos.x);
+
+            user.amp = 1 - (distance / window.innerHeight); // TODO shrug
+            user.theta = theta;
+
+            invoke('user_update', { id: user.id, user: user })
+                .then(updateResponse)
+                .catch(updateResponse);
+        }
 
         const canvas = document.getElementById('myCanvas');
         if (!canvas) {
@@ -86,7 +100,7 @@
                 users[selected].amp = 1 - (distance / window.innerHeight); // TODO shrug
                 users[selected].theta = theta;
 
-                invoke('user_update', { id: selected, user: users[selected] })
+                invoke('user_update', { id: users[selected].id, user: users[selected] })
                     .then(updateResponse)
                     .catch(updateResponse);
 
