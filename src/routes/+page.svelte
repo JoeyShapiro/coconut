@@ -26,10 +26,14 @@
         name: string;
         pos: Pos;
         isCurrent: boolean;
-        constructor(name: string, pos: Pos, isCurrent: boolean = false) {
+        amp: number;
+        theta: number;
+        constructor(name: string, pos: Pos, isCurrent: boolean = false, amp: number = 0, theta: number = 0) {
             this.name = name;
             this.pos = pos;
             this.isCurrent = isCurrent;
+            this.amp = amp;
+            this.theta = theta;
         }
     }
 
@@ -74,6 +78,18 @@
             if (selected !== -1) {
                 users[selected].pos = new Pos(e.offsetX, e.offsetY);
                 console.log(`moved users[${selected}] to (${e.offsetX}, ${e.offsetY})`);
+
+                console.log(`users[${selected}]`, users[selected]);
+                let distance = Math.sqrt(Math.pow(users[cur].pos.x - users[selected].pos.x, 2) + Math.pow(users[cur].pos.y - users[selected].pos.y, 2));
+                let theta = Math.atan2(users[selected].pos.y - users[cur].pos.y, users[selected].pos.x - users[cur].pos.x);
+
+                users[selected].amp = 1 - (distance / window.innerHeight); // TODO shrug
+                users[selected].theta = theta;
+
+                invoke('user_update', { id: selected, user: users[selected] })
+                    .then(updateResponse)
+                    .catch(updateResponse);
+
                 selected = -1;
             }
             selector[1] = new Pos( e.offsetX, e.offsetY );

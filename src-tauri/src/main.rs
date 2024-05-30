@@ -7,7 +7,7 @@ pub mod connection;
 use std::{process::exit, thread::sleep};
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use crate::oscillator::{Oscillator, Waveform};
 use crate::connection::{Connection, Packet};
@@ -15,10 +15,13 @@ use std::collections::HashMap;
 
 struct Settings {
     amplifier: f32,
+    map_width: u32,
+    map_height: u32,
+    player_id: u8,
     users: HashMap<u8, User>, // TODO this could actually be a vec. actually just do an array. then id is the index. that will work
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct User {
     id: u8,
@@ -30,7 +33,7 @@ struct User {
     theta: f32,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 struct Pos {
     x: f32,
     y: f32,
@@ -95,7 +98,11 @@ fn main() {
     let path = std::env::current_dir().unwrap();
     println!("The current directory is {}", path.display());
 
-    let mut state = AppState(std::sync::Arc::new(std::sync::Mutex::new(Some(Settings { amplifier: 1.0, users: fetch_users() }))));
+    let users = fetch_users();
+    let player_id = users.values().find(|&u| u.is_current).unwrap().id;
+    let mut state = AppState(std::sync::Arc::new(std::sync::Mutex::new(Some(
+        Settings { amplifier: 1.0, map_width: 1280, map_height: 720, player_id, users }
+    ))));
 
     // oh its between threads
     // create a mutex
@@ -220,7 +227,7 @@ fn main() {
             let mut i = 512;
             while let Some(packet) = data.pop() {
                 if packet.id != user.id {
-                    println!("rx: user changed: {} -> {} {} {}", user.id, packet.id, i, data.len());
+                    // println!("rx: user changed: {} -> {} {} {}", user.id, packet.id, i, data.len());
                     user = users.get(&packet.id).unwrap_or_else(|| {
                         eprintln!("rx: user not found: {}", packet.id);
                         &user
@@ -266,7 +273,7 @@ fn main() {
 
 	tauri::Builder::default()
         .manage(state)
-        .invoke_handler(tauri::generate_handler![get_amplifier, set_amplifier, get_users])
+        .invoke_handler(tauri::generate_handler![get_amplifier, set_amplifier, get_users, user_update])
 		.run(tauri::generate_context!())
 		.expect("error while running tauri application");
 
@@ -293,6 +300,21 @@ fn set_amplifier(state: tauri::State<'_, AppState>, value: f32) {
 #[tauri::command]
 fn get_users(state: tauri::State<'_, AppState>) -> Vec<User> {
     state.0.lock().unwrap().as_ref().unwrap().users.clone().into_iter().map(|(_, u)| u).collect()
+}
+
+#[tauri::command]
+fn user_update(state: tauri::State<'_, AppState>, id: u8, user: User) {
+    // TODO do the math here
+    if let Some(settings) = &mut *state.0.lock().unwrap() {
+        if let Some(u) = settings.users.get_mut(&id) {
+            *u = user;
+            println!("User updated: {:?}", u.amp);
+        } else {
+            eprintln!("User not found: {}", id);
+        }
+    } else {
+        eprintln!("Settings is None, can't update user");
+    }
 }
 
 fn fetch_users() -> HashMap<u8, User> {
