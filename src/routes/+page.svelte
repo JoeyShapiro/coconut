@@ -91,18 +91,24 @@
         canvas.addEventListener("mouseup", function (e) {
             if (selected !== -1) {
                 users[selected].pos = new Pos(e.offsetX, e.offsetY);
-                console.log(`moved users[${selected}] to (${e.offsetX}, ${e.offsetY})`);
 
-                console.log(`users[${selected}]`, users[selected]);
-                let distance = Math.sqrt(Math.pow(users[cur].pos.x - users[selected].pos.x, 2) + Math.pow(users[cur].pos.y - users[selected].pos.y, 2));
-                let theta = Math.atan2(users[selected].pos.y - users[cur].pos.y, users[selected].pos.x - users[cur].pos.x);
+                console.log(`moved users[${selected}]: ${users[selected]}`);
+                
+                // stupid clever way. unbeleivably stupid
+                for (let i = 0; i < users.length; i++) {
+                    // if the user is the current user, update all the other users; otherwise update the selected user
+                    if (users[selected].isCurrent || i == selected) {
+                        let distance = Math.sqrt(Math.pow(users[cur].pos.x - users[i].pos.x, 2) + Math.pow(users[cur].pos.y - users[i].pos.y, 2));
+                        let theta = Math.atan2(users[i].pos.y - users[cur].pos.y, users[i].pos.x - users[cur].pos.x);
 
-                users[selected].amp = 1 - (distance / window.innerHeight); // TODO shrug
-                users[selected].theta = theta;
+                        users[i].amp = 1 - (distance / window.innerHeight); // TODO shrug
+                        users[i].theta = theta;
 
-                invoke('user_update', { id: users[selected].id, user: users[selected] })
-                    .then(updateResponse)
-                    .catch(updateResponse);
+                        invoke('user_update', { id: users[i].id, user: users[i] })
+                            .then(updateResponse)
+                            .catch(updateResponse);
+                    }
+                }
 
                 selected = -1;
             }
@@ -199,10 +205,6 @@
                     ctx.strokeStyle = '#003300';
                 }
                 ctx.stroke();
-
-                let distance = Math.sqrt(Math.pow(users[cur].pos.x - user.pos.x, 2) + Math.pow(users[cur].pos.y - user.pos.y, 2));
-                // round to 2 decimal places
-                distance = Math.round(distance * 100) / 100;
 
                 // write the distance next to the user
                 ctx.font = "12px Arial";
