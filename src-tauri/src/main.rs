@@ -19,6 +19,7 @@ struct Settings {
     map_height: u32,
     player_id: u8,
     users: HashMap<u8, User>, // TODO this could actually be a vec. actually just do an array. then id is the index. that will work
+    talkers: Vec<u8>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -101,7 +102,7 @@ fn main() {
     let users = fetch_users();
     let player_id = users.values().find(|&u| u.is_current).unwrap().id;
     let mut state = AppState(std::sync::Arc::new(std::sync::Mutex::new(Some(
-        Settings { volume: 0.0, map_width: 1280, map_height: 720, player_id, users }
+        Settings { volume: 0.0, map_width: 1280, map_height: 720, player_id, users, talkers: vec![] }
     ))));
 
     // oh its between threads
@@ -186,6 +187,10 @@ fn main() {
 
         // TODO maybe make 0 either no one, or the current user. the current user should never be sent
         // lol i already did thi
+        // TODO handle multple users
+        // TODO handle the current user
+        // TODO clean up
+        // TODO server, send data to start
         let mut user = User { id: 0, name: "".to_string(), pos: Pos { x: 0.0, y: 0.0 }, is_current: false, amp: 1.0, theta: 0.0 };
         loop {
             // println!("4: rx: waiting for data");
@@ -225,6 +230,7 @@ fn main() {
             // TODO something with 2 users. also just one is kinda blurry. i might have to go back. i can just do a stash though
             let mut samples: [f32; 512] = [0.0; 512];
             let mut i = 512;
+            let mut talkers: Vec<u8> = vec![];
             while let Some(packet) = data.pop() {
                 if packet.id != user.id {
                     // println!("rx: user changed: {} -> {} {} {}", user.id, packet.id, i, data.len());
@@ -234,10 +240,14 @@ fn main() {
                     }).clone();
                     i = 512; // TODO is it really backwards
                     oscillator.rewind(samples.len() as i32);
+                    talkers.push(user.id);
                 }
                 i -= 1;
 
                 samples[i] = oscillator.tick() * user.amp;
+            }
+            if let Some(settings) = &mut *r_state_rx.lock().unwrap() {
+                settings.talkers = talkers;
             }
 
             // println!("{:?}", samples);
@@ -273,7 +283,9 @@ fn main() {
 
 	tauri::Builder::default()
         .manage(state)
-        .invoke_handler(tauri::generate_handler![get_amplifier, set_volume, get_users, user_update])
+        .invoke_handler(
+            tauri::generate_handler![get_amplifier, set_volume, get_users, user_update, get_talkers]
+        )
 		.run(tauri::generate_context!())
 		.expect("error while running tauri application");
 
@@ -299,6 +311,11 @@ fn set_volume(state: tauri::State<'_, AppState>, value: f32) {
 #[tauri::command]
 fn get_users(state: tauri::State<'_, AppState>) -> Vec<User> {
     state.0.lock().unwrap().as_ref().unwrap().users.clone().into_iter().map(|(_, u)| u).collect()
+}
+
+#[tauri::command]
+fn get_talkers(state: tauri::State<'_, AppState>) -> Vec<u8> {
+    state.0.lock().unwrap().as_ref().unwrap().talkers.clone()
 }
 
 #[tauri::command]

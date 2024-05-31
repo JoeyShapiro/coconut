@@ -1,7 +1,6 @@
 <div bind:clientHeight={h}>
     <h1>Welcome to SvelteKit</h1>
     <p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
-    <button id="increment-btn">Increment counter</button>
     <input type="range" min="1" max="100" value="{0}" class="volume" id="volume">
 </div>
 
@@ -41,6 +40,7 @@
 
     let h = 0;
     let users: User[];
+    let talkers: number[] = [];
     let selected = -1; // TODO make this 2d
     let selector: Pos[] = [];
     let isSelecting: boolean = false;
@@ -141,15 +141,6 @@
             console.log(response);
         }
 
-        const incrementBtn = document.querySelector('#increment-btn') as HTMLButtonElement;
-        incrementBtn.addEventListener('click', () => {
-            invoke('set_amplifier', {
-                    value: 5.0
-                })
-                .then(updateResponse)
-                .catch(updateResponse)
-        });
-
         const volume = document.querySelector('#volume') as HTMLInputElement;
         volume.addEventListener('input', () => {
             invoke('set_volume', {
@@ -162,6 +153,15 @@
         setInterval(() => {
             redraw();
         }, 100);
+
+        setInterval(async () => {
+            talkers = await invoke('get_talkers').then((response) => {
+                return response as number[];
+            }).catch((error) => {
+                console.error(error);
+                return [] as number[];
+            });
+        }, 1000);
 
         function redraw() {
             const canvas = document.getElementById('myCanvas');
@@ -190,8 +190,14 @@
                     ctx.fillStyle = 'green';
                 }
                 ctx.fill();
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = '#003300';
+
+                if (talkers.includes(user.id)) {
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#990000';
+                } else {
+                    ctx.lineWidth = 1;
+                    ctx.strokeStyle = '#003300';
+                }
                 ctx.stroke();
 
                 let distance = Math.sqrt(Math.pow(users[cur].pos.x - user.pos.x, 2) + Math.pow(users[cur].pos.y - user.pos.y, 2));
@@ -206,7 +212,7 @@
                 if (user.isCurrent) { // can now use the pos rather than reget it
                     ctx.fillText(`(${user.pos.x}, ${user.pos.y})`, user.pos.x + 10, user.pos.y + 10);
                 } else {
-                    ctx.fillText(distance, user.pos.x + 10, user.pos.y + 10);
+                    ctx.fillText(`${user.name} (${Math.round(user.amp*100)}%)`, user.pos.x + 10, user.pos.y + 10);
                 }
             }
         }
