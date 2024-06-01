@@ -1,7 +1,9 @@
 // data rx / tx
 
+use std::io::Write;
+
 pub struct Connection {
-    // stream: std::net::TcpStream,
+    stream: std::net::TcpStream,
     version: u8,
     id: u8,
 }
@@ -12,9 +14,17 @@ pub struct Packet {
 }
 
 impl Connection {
-    pub fn new(version: u8, id: u8) -> Result<Self, std::io::Error> {
-        // let stream = std::net::TcpStream::connect("127.0.0.1:42069")?;
-        Ok(Self {  version, id })
+    pub fn new(version: u8, id: u8, name: String, addr: String) -> Result<Self, std::io::Error> {
+        let mut stream = std::net::TcpStream::connect(addr)?;
+
+        // send the version and id
+        let mut data: Vec<u8> = vec![];
+        data.push(version);
+        data.push(id);
+        data.extend(name.as_bytes());
+        stream.write(&data)?;
+
+        Ok(Self {  version, id, stream })
     }
 
     pub fn rx_data(&mut self) -> Vec<Packet> {
@@ -32,7 +42,7 @@ impl Connection {
     pub fn tx_data(&mut self, data: Vec<f32>) -> Result<(), std::io::Error> {
         // println!("tx: sending data {}", data.len());
         // send the data
-        // self.stream.write(&vec![])?;
+        self.stream.write(&vec![])?;
         Ok(())
     }
 }

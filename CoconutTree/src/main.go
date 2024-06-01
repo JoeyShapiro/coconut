@@ -6,8 +6,9 @@ import (
 )
 
 const (
-	CONN_HOST = "localhost"
-	CONN_PORT = "42069"
+	CONN_HOST   = "localhost"
+	CONN_PORT   = "42069"
+	PKT_VERSION = 1
 )
 
 func main() {
@@ -40,8 +41,14 @@ func handleConnection(conn net.Conn) {
 			fmt.Println("Error reading:", err.Error())
 			break
 		}
-		fmt.Printf("Received: %s", buf[:n])
+		fmt.Printf("Received (%d): %v\n", n, buf[:n])
+		conn.Write([]byte{PKT_GREETINGS, 1})
 	}
 	conn.Close()
 	fmt.Printf("Connection closed with %s\n", conn.RemoteAddr())
 }
+
+const (
+	PKT_FUCKOFF = iota
+	PKT_GREETINGS
+)
