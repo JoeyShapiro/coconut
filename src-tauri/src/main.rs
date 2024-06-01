@@ -188,7 +188,6 @@ fn main() {
         // TODO maybe make 0 either no one, or the current user. the current user should never be sent
         // lol i already did thi
         // TODO handle multple users
-        // TODO handle the current user
         // TODO clean up
         // TODO server, send data to start
         let mut user = User { id: 0, name: "".to_string(), pos: Pos { x: 0.0, y: 0.0 }, is_current: false, amp: 1.0, theta: 0.0 };

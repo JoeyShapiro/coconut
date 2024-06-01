@@ -212,7 +212,7 @@
                 // TODO do seomthing with the distance
                 // TODO radius based on window or something
                 if (user.isCurrent) { // can now use the pos rather than reget it
-                    ctx.fillText(`(${user.pos.x}, ${user.pos.y})`, user.pos.x + 10, user.pos.y + 10);
+                    ctx.fillText(`${user.name} (${user.pos.x}, ${user.pos.y})`, user.pos.x + 10, user.pos.y + 10);
                 } else {
                     ctx.fillText(`${user.name} (${Math.round(user.amp*100)}%)`, user.pos.x + 10, user.pos.y + 10);
                 }
