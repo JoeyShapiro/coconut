@@ -137,7 +137,7 @@ fn main() {
     };
 
     let connection = std::sync::Arc::new(std::sync::Mutex::new(Some(
-        Connection::new(0, 1, "Joey".to_owned(), "localhost:42069".to_owned()).unwrap()
+        Connection::new( 1, "Joey".to_owned(), "localhost:42069".to_owned()).unwrap()
     )));
     exit(0);
     // let conn_ring = ringbuf::HeapRb::<f32>::new(latency_samples * 2);
