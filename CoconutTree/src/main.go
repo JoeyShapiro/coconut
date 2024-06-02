@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"io"
 	"net"
 )
 
@@ -42,13 +43,21 @@ func main() {
 }
 
 func handleConnection(conn net.Conn) {
+	var id uint8
 	// handle connection
 	fmt.Printf("Connection from %s\n", conn.RemoteAddr())
 	// conn.Write([]byte("Hello, World!"))
 	for {
 		buf := make([]byte, 4096)
 		n, err := conn.Read(buf)
-		if err != nil {
+		if err == io.EOF {
+			fmt.Println("Connection closed by client")
+			if id != 0 {
+				RemoveUser(id)
+				fmt.Printf("user with id %d has left\n", id) // server only cares about the id
+			}
+			break
+		} else if err != nil {
 			fmt.Println("Error reading:", err.Error())
 			break
 		}
@@ -67,7 +76,7 @@ func handleConnection(conn net.Conn) {
 		if p.Type == PKT_GREETINGS {
 			var data []byte
 			user := UserConn{Conn: &conn, User: string(p.Data)}
-			id, err := InsertUser(user)
+			id, err = InsertUser(user)
 			if err != nil {
 				data = []byte{PKT_VERSION, PKT_GREETINGS, 0}
 			} else {
@@ -112,6 +121,15 @@ func InsertUser(user UserConn) (uint8, error) {
 	}
 
 	return 0, errors.New("could not insert user")
+}
+
+func RemoveUser(id uint8) error {
+	if _, ok := users[id]; !ok {
+		return errors.New("user does not exist")
+	}
+
+	delete(users, id)
+	return nil
 }
 
 type Packet struct {
