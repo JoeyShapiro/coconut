@@ -36,13 +36,13 @@ func handleConnection(conn net.Conn) {
 	fmt.Printf("Connection from %s\n", conn.RemoteAddr())
 	// conn.Write([]byte("Hello, World!"))
 	for {
-		buf := make([]byte, 1024)
+		buf := make([]byte, 4096)
 		n, err := conn.Read(buf)
 		if err != nil {
 			fmt.Println("Error reading:", err.Error())
 			break
 		}
-		fmt.Printf("Received (%d): %v\n", n, buf[:n])
+		fmt.Printf("Received %d Bytes\n", n)
 
 		p, err := Packet{}.Parse(buf[:n])
 		if err != nil {
@@ -50,10 +50,16 @@ func handleConnection(conn net.Conn) {
 			conn.Write([]byte{PKT_VERSION, PKT_FUCKOFF})
 			break
 		}
-		fmt.Printf("%+v\n", p)
+		// fmt.Printf("%+v\n", p)
 
-		data := []byte{PKT_VERSION, PKT_GREETINGS, p.ID}
-		conn.Write(data)
+		if p.Type == PKT_GREETINGS {
+			data := []byte{PKT_VERSION, PKT_GREETINGS, p.ID}
+			conn.Write(data)
+		} else if p.Type == PKT_SAMPLE {
+			fmt.Println(len(p.Data), p.Data[:10])
+			data := []byte{PKT_VERSION, PKT_OK} // TODO maybe send the length or something, but ok should be good enough
+			conn.Write(data)
+		}
 	}
 	conn.Close()
 	fmt.Printf("Connection closed with %s\n", conn.RemoteAddr())
@@ -62,10 +68,13 @@ func handleConnection(conn net.Conn) {
 const (
 	PKT_FUCKOFF = iota
 	PKT_GREETINGS
+	PKT_SAMPLE
+	PKT_OK
 )
 
 type Packet struct {
 	Version uint8
+	Type    uint8
 	ID      uint8
 	Data    []byte
 }
@@ -82,8 +91,9 @@ func (Packet) Parse(data []byte) (p Packet, err error) {
 		return
 	}
 
-	p.ID = data[1]
-	p.Data = data[1:]
+	p.Type = data[1]
+	p.ID = data[2]
+	p.Data = data[3:] // TODO pretty sure this is right
 
 	return
 }

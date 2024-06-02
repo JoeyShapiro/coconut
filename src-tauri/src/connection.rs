@@ -16,6 +16,7 @@ pub struct Packet {
 const PKT_VERSION: u8 = 1;
 const PKT_FUCKOFF: u8 = 0;
 const PKT_GREETINGS: u8 = 1;
+const PKT_SAMPLE: u8 = 2;
 
 impl Connection {
     pub fn new(id: u8, name: String, addr: String) -> Result<Self, std::io::Error> {
@@ -24,6 +25,7 @@ impl Connection {
         // send the version and id
         let mut data: Vec<u8> = vec![];
         data.push(PKT_VERSION);
+        data.push(PKT_GREETINGS);
         data.push(id);
         data.extend(name.as_bytes());
         stream.write(&data)?;
@@ -38,12 +40,12 @@ impl Connection {
             return Err(std::io::Error::new(std::io::ErrorKind::Other, "received a 'fuck off' packet."));
         }
 
-        let d: f32 = 42.100001;
+        let d: f32 = 42.100001; // if the 1 is not here, it does not have precision
         let i: u32 = d.to_bits(); // they already did they type punning :(
         println!("{} -> {}", d, i);
         let b = sample_to_bytes(d);
         println!("to bytes {:?}", b);
-        println!("from bytes {:.32?}", sample_from_bytes(b));
+        println!("{} -> {:.32?}", d, sample_from_bytes(b));
 
         Ok(Self {  version: buf[0], id, stream })
     }
@@ -60,25 +62,37 @@ impl Connection {
         data
     }
 
-    pub fn tx_data(&mut self, data: Vec<f32>) -> Result<(), std::io::Error> {
-        // println!("tx: sending data {}", data.len());
-        // send the data
-        let mut buf: [u8; 1024] = [0; 1024];
-        let mut i = 0;
-        buf[i] = self.version;
-        i+=1;
-        buf[i] = self.id;
-        i+=1;
-        while i < 1024 {
-            // i have to do this. even if a vec
-            // buf[i] = data[i-2];
-            i+=1;
-        }
-        if i-2 != data.len() {
+    pub fn tx_data(&mut self, data: &mut Vec<f32>) -> Result<(), std::io::Error> {
+        if data.len() != 512 {
             return Err(std::io::Error::new(std::io::ErrorKind::Other, "data does not fit in packet")); 
         }
 
+        // println!("tx: sending data {}", data.len());
+        // send the data
+        let mut buf: [u8; 2051] = [0; 2051];
+        let mut i = 0;
+        buf[i] = self.version;
+        i+=1;
+        buf[i] = PKT_SAMPLE;
+        i+=1;
+        buf[i] = self.id;
+        i+=1;
+        while let Some(d) = data.pop() {
+            // TODO either do this or use j for data
+            // i have to do this. even if a vec
+            // buf[i] = data[i-2];
+            let b = sample_to_bytes(d);
+            buf[i] = b[0];
+            buf[i+1] = b[1];
+            buf[i+2] = b[2];
+            buf[i+3] = b[3];
+            i+=4;
+        }
+
         self.stream.write(&buf)?;
+        let mut bufo: [u8; 3] = [0; 3];
+        self.stream.read(&mut bufo)?;
+
         Ok(())
     }
 }

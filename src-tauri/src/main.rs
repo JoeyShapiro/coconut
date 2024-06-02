@@ -139,7 +139,6 @@ fn main() {
     let connection = std::sync::Arc::new(std::sync::Mutex::new(Some(
         Connection::new( 1, "Joey".to_owned(), "localhost:42069".to_owned()).unwrap()
     )));
-    exit(0);
     // let conn_ring = ringbuf::HeapRb::<f32>::new(latency_samples * 2);
     // let (mut conn_producer, mut conn_consumer) = conn_ring.split();
     // push tx pop rx. i dont think thats how it works. i would need 2 ring buffers
@@ -172,7 +171,7 @@ fn main() {
                     }
                 };
                 // "send" the data
-                conn.tx_data(data).unwrap();
+                conn.tx_data(&mut data).unwrap();
             }
         }
     });
