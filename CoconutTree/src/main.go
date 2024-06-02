@@ -19,6 +19,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -76,6 +77,11 @@ func (Packet) Parse(data []byte) (p Packet, err error) {
 	}
 
 	p.Version = data[0]
+	if p.Version != PKT_VERSION {
+		err = errors.New("version mismatch")
+		return
+	}
+
 	p.ID = data[1]
 	p.Data = data[1:]
 

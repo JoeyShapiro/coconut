@@ -27,6 +27,7 @@ impl Connection {
         data.push(id);
         data.extend(name.as_bytes());
         stream.write(&data)?;
+        // TODO sample rate
 
         let mut buf: [u8; 3] = [0; 3];
         stream.read(&mut buf)?;
@@ -36,6 +37,26 @@ impl Connection {
         } else if buf[1] == PKT_FUCKOFF {
             return Err(std::io::Error::new(std::io::ErrorKind::Other, "received a 'fuck off' packet."));
         }
+
+        let d: f32 = 42.000001;
+        let i: u32 = d.to_bits(); // they already did they type punning :(
+        println!("{} -> {}", d, i);
+        // bit shifing
+        let b1: u8 = 10;
+        let b2: u8 = 12;
+        let b: u32 = ((b1 as u32) << 24) + ((b2 as u32) << 16);
+        let b3: u8 = (b >> 24) as u8;
+        println!("b3 {b3}");
+        let b4: u8 = (b >> 16) as u8;
+        println!("b4 {b4}");
+
+        let i1: u8 = (i >> 0) as u8;
+        let i2: u8 = (i >> 8) as u8;
+        let i3: u8 = (i >> 16) as u8;
+        let i4: u8 = (i >> 24) as u8;
+
+        let ii: u32 = ((i4 as u32) << 24) + ((i3 as u32) << 16) + ((i2 as u32) << 8) + ((i1 as u32) << 0);
+        println!("ii {ii}");
 
         Ok(Self {  version: buf[0], id, stream })
     }
@@ -55,7 +76,22 @@ impl Connection {
     pub fn tx_data(&mut self, data: Vec<f32>) -> Result<(), std::io::Error> {
         // println!("tx: sending data {}", data.len());
         // send the data
-        self.stream.write(&vec![])?;
+        let mut buf: [u8; 1024] = [0; 1024];
+        let mut i = 0;
+        buf[i] = self.version;
+        i+=1;
+        buf[i] = self.id;
+        i+=1;
+        while i < 1024 {
+            // i have to do this. even if a vec
+            // buf[i] = data[i-2];
+            i+=1;
+        }
+        if i-2 != data.len() {
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, "data does not fit in packet")); 
+        }
+
+        self.stream.write(&buf)?;
         Ok(())
     }
 }
