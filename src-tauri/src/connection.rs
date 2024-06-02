@@ -17,6 +17,7 @@ const PKT_VERSION: u8 = 1;
 const PKT_FUCKOFF: u8 = 0;
 const PKT_GREETINGS: u8 = 1;
 const PKT_SAMPLE: u8 = 2;
+const PKT_OK: u8 = 3;
 
 impl Connection {
     pub fn new(id: u8, name: String, addr: String) -> Result<Self, std::io::Error> {
@@ -92,7 +93,9 @@ impl Connection {
         let mut bufo: [u8; 3] = [0; 3];
         self.stream.read(&mut bufo)?;
 
-
+        if bufo[1] != PKT_OK {
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, "packet failed to send ok"));
+        }
 
         Ok(())
     }

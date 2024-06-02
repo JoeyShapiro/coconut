@@ -42,21 +42,36 @@ func handleConnection(conn net.Conn) {
 			fmt.Println("Error reading:", err.Error())
 			break
 		}
-		fmt.Printf("Received %d Bytes\n", n)
+		// fmt.Printf("Received %d Bytes\n", n)
 
 		p, err := Packet{}.Parse(buf[:n])
+		// this will handle the length and all that stuff for each packet type
+		// if something inm the packet is invalid, it will return an error at the right time
 		if err != nil {
 			fmt.Println("Error parsing packet:", err.Error())
+			fmt.Printf("%+v\n", buf[:n])
 			conn.Write([]byte{PKT_VERSION, PKT_FUCKOFF})
 			break
 		}
-		// fmt.Printf("%+v\n", p)
 
 		if p.Type == PKT_GREETINGS {
 			data := []byte{PKT_VERSION, PKT_GREETINGS, p.ID}
 			conn.Write(data)
 		} else if p.Type == PKT_SAMPLE {
-			fmt.Println(len(p.Data), p.Data[:10])
+			var hasData uint
+			for _, d := range p.Data {
+				if d != 0 {
+					hasData += 1
+				}
+			}
+			if hasData > 0 {
+				fmt.Println("has data:", hasData)
+			}
+
+			if len(p.Data) != 2048 {
+				fmt.Println("Invalid data length", len(p.Data))
+			}
+
 			data := []byte{PKT_VERSION, PKT_OK} // TODO maybe send the length or something, but ok should be good enough
 			conn.Write(data)
 		}
