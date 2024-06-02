@@ -137,7 +137,7 @@ fn main() {
     };
 
     let connection = std::sync::Arc::new(std::sync::Mutex::new(Some(
-        Connection::new( 1, "Joey".to_owned(), "localhost:42069".to_owned()).unwrap()
+        Connection::new("Joey".to_owned(), "localhost:42069".to_owned()).unwrap()
     )));
     // let conn_ring = ringbuf::HeapRb::<f32>::new(latency_samples * 2);
     // let (mut conn_producer, mut conn_consumer) = conn_ring.split();
@@ -146,7 +146,7 @@ fn main() {
 
 
     let r_conn_tx = std::sync::Arc::clone(&connection);
-    std::thread::spawn(move || {
+    let _thread_tx = std::thread::Builder::new().name("transmitter".to_string()).spawn(move || {
         println!("Starting the tx thread");
 
         loop {
@@ -174,11 +174,11 @@ fn main() {
                 conn.tx_data(&mut data).unwrap();
             }
         }
-    });
+    }).unwrap();
 
     let r_conn_rx = std::sync::Arc::clone(&connection);
     let r_state_rx = std::sync::Arc::clone(&state.0);
-    std::thread::spawn(move || {
+    let _thread_rx = std::thread::Builder::new().name("receiver".to_string()).spawn(move || {
         println!("Starting the rx thread");
         let mut oscillator = Oscillator {
             waveform: Waveform::Sine,

@@ -12,8 +12,17 @@ const (
 	PKT_VERSION = 1
 )
 
+var (
+	users          map[uint8]UserConn
+	maxConnections uint8
+)
+
 func main() {
 	fmt.Println("Hello, World!")
+	maxConnections = 8
+
+	users = make(map[uint8]UserConn, maxConnections)
+
 	address := CONN_HOST + ":" + CONN_PORT
 	ln, err := net.Listen("tcp", address)
 	if err != nil {
@@ -55,19 +64,17 @@ func handleConnection(conn net.Conn) {
 		}
 
 		if p.Type == PKT_GREETINGS {
-			data := []byte{PKT_VERSION, PKT_GREETINGS, p.ID}
-			conn.Write(data)
-		} else if p.Type == PKT_SAMPLE {
-			var hasData uint
-			for _, d := range p.Data {
-				if d != 0 {
-					hasData += 1
-				}
-			}
-			if hasData > 0 {
-				fmt.Println("has data:", hasData)
+			var data []byte
+			user := UserConn{Conn: &conn, User: string(p.Data)}
+			id, err := InsertUser(user)
+			if err != nil {
+				data = []byte{PKT_VERSION, PKT_GREETINGS, 0}
+			} else {
+				data = []byte{PKT_VERSION, PKT_GREETINGS, id}
 			}
 
+			conn.Write(data)
+		} else if p.Type == PKT_SAMPLE {
 			if len(p.Data) != 2048 {
 				fmt.Println("Invalid data length", len(p.Data))
 			}
@@ -86,6 +93,22 @@ const (
 	PKT_SAMPLE
 	PKT_OK
 )
+
+type UserConn struct {
+	Conn *net.Conn
+	User string
+}
+
+func InsertUser(user UserConn) (uint8, error) {
+	for i := 0; i < int(maxConnections); i++ {
+		if _, ok := users[uint8(i)]; !ok {
+			users[uint8(i)] = user
+			return uint8(i), nil
+		}
+	}
+
+	return 0, errors.New("could not insert user")
+}
 
 type Packet struct {
 	Version uint8

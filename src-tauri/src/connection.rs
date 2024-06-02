@@ -20,14 +20,13 @@ const PKT_SAMPLE: u8 = 2;
 const PKT_OK: u8 = 3;
 
 impl Connection {
-    pub fn new(id: u8, name: String, addr: String) -> Result<Self, std::io::Error> {
+    pub fn new(name: String, addr: String) -> Result<Self, std::io::Error> {
         let mut stream = std::net::TcpStream::connect(addr)?;
 
         // send the version and id
         let mut data: Vec<u8> = vec![];
         data.push(PKT_VERSION);
         data.push(PKT_GREETINGS);
-        data.push(id);
         data.extend(name.as_bytes());
         stream.write(&data)?;
         // TODO sample rate
@@ -38,6 +37,8 @@ impl Connection {
             return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("version mismatch: expected {}, received {}", PKT_VERSION, buf[0])));
         } else if buf[1] == PKT_FUCKOFF {
             return Err(std::io::Error::new(std::io::ErrorKind::Other, "received a 'fuck off' packet."));
+        } else if buf[2] == 0 {
+            return Err(std::io::Error::new(std::io::ErrorKind::Other, "could not join server"))
         }
 
         // let d: f32 = 42.100001; // if the 1 is not here, it does not have precision
@@ -47,7 +48,7 @@ impl Connection {
         // println!("to bytes {:?}", b);
         // println!("{} -> {:.32?}", d, sample_from_bytes(b));
 
-        Ok(Self {  version: buf[0], id, stream })
+        Ok(Self {  version: buf[0], id: buf[2], stream })
     }
 
     pub fn rx_data(&mut self) -> Vec<Packet> {
