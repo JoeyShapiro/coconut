@@ -38,25 +38,12 @@ impl Connection {
             return Err(std::io::Error::new(std::io::ErrorKind::Other, "received a 'fuck off' packet."));
         }
 
-        let d: f32 = 42.000001;
+        let d: f32 = 42.100001;
         let i: u32 = d.to_bits(); // they already did they type punning :(
         println!("{} -> {}", d, i);
-        // bit shifing
-        let b1: u8 = 10;
-        let b2: u8 = 12;
-        let b: u32 = ((b1 as u32) << 24) + ((b2 as u32) << 16);
-        let b3: u8 = (b >> 24) as u8;
-        println!("b3 {b3}");
-        let b4: u8 = (b >> 16) as u8;
-        println!("b4 {b4}");
-
-        let i1: u8 = (i >> 0) as u8;
-        let i2: u8 = (i >> 8) as u8;
-        let i3: u8 = (i >> 16) as u8;
-        let i4: u8 = (i >> 24) as u8;
-
-        let ii: u32 = ((i4 as u32) << 24) + ((i3 as u32) << 16) + ((i2 as u32) << 8) + ((i1 as u32) << 0);
-        println!("ii {ii}");
+        let b = sample_to_bytes(d);
+        println!("to bytes {:?}", b);
+        println!("from bytes {:.32?}", sample_from_bytes(b));
 
         Ok(Self {  version: buf[0], id, stream })
     }
@@ -94,4 +81,21 @@ impl Connection {
         self.stream.write(&buf)?;
         Ok(())
     }
+}
+
+fn sample_to_bytes(sample: f32) -> [u8; 4] {
+    let i = sample.to_bits();
+
+    // bit shifting
+    let i1: u8 = (i >> 0) as u8;
+    let i2: u8 = (i >> 8) as u8;
+    let i3: u8 = (i >> 16) as u8;
+    let i4: u8 = (i >> 24) as u8;
+
+    [i1, i2, i3, i4]
+}
+
+fn sample_from_bytes(data: [u8; 4]) -> f32 {
+    let ii: u32 = ((data[3] as u32) << 24) + ((data[2] as u32) << 16) + ((data[1] as u32) << 8) + ((data[0] as u32) << 0);
+    f32::from_bits(ii)
 }
