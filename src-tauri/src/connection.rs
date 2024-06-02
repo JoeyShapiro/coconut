@@ -33,19 +33,18 @@ impl Connection {
 
         let mut buf: [u8; 3] = [0; 3];
         stream.read(&mut buf)?;
-        println!("{buf:?}");
         if buf[0] != PKT_VERSION {
             return Err(std::io::Error::new(std::io::ErrorKind::Other, format!("version mismatch: expected {}, received {}", PKT_VERSION, buf[0])));
         } else if buf[1] == PKT_FUCKOFF {
             return Err(std::io::Error::new(std::io::ErrorKind::Other, "received a 'fuck off' packet."));
         }
 
-        let d: f32 = 42.100001; // if the 1 is not here, it does not have precision
-        let i: u32 = d.to_bits(); // they already did they type punning :(
-        println!("{} -> {}", d, i);
-        let b = sample_to_bytes(d);
-        println!("to bytes {:?}", b);
-        println!("{} -> {:.32?}", d, sample_from_bytes(b));
+        // let d: f32 = 42.100001; // if the 1 is not here, it does not have precision
+        // let i: u32 = d.to_bits(); // they already did they type punning :(
+        // println!("{} -> {}", d, i);
+        // let b = sample_to_bytes(d);
+        // println!("to bytes {:?}", b);
+        // println!("{} -> {:.32?}", d, sample_from_bytes(b));
 
         Ok(Self {  version: buf[0], id, stream })
     }
@@ -93,10 +92,13 @@ impl Connection {
         let mut bufo: [u8; 3] = [0; 3];
         self.stream.read(&mut bufo)?;
 
+
+
         Ok(())
     }
 }
 
+// did this without ai help, but there is prolly a function for this
 fn sample_to_bytes(sample: f32) -> [u8; 4] {
     let i = sample.to_bits();
 
