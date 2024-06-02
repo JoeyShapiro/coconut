@@ -25,6 +25,7 @@ func main() {
 
 	address := CONN_HOST + ":" + CONN_PORT
 	ln, err := net.Listen("tcp", address)
+	fmt.Println("Listening on", address)
 	if err != nil {
 		panic(err)
 	}
@@ -73,6 +74,8 @@ func handleConnection(conn net.Conn) {
 				data = []byte{PKT_VERSION, PKT_GREETINGS, id}
 			}
 
+			fmt.Printf("%s has joined with the id %d\n", user.User, id)
+
 			conn.Write(data)
 		} else if p.Type == PKT_SAMPLE {
 			if len(p.Data) != 2048 {
@@ -100,7 +103,8 @@ type UserConn struct {
 }
 
 func InsertUser(user UserConn) (uint8, error) {
-	for i := 0; i < int(maxConnections); i++ {
+	// we will always skip 0. that is reserved
+	for i := 1; i < int(maxConnections+1); i++ {
 		if _, ok := users[uint8(i)]; !ok {
 			users[uint8(i)] = user
 			return uint8(i), nil

@@ -27,6 +27,7 @@ impl Connection {
         let mut data: Vec<u8> = vec![];
         data.push(PKT_VERSION);
         data.push(PKT_GREETINGS);
+        data.push(0); // we push an empty id, for now
         data.extend(name.as_bytes());
         stream.write(&data)?;
         // TODO sample rate
