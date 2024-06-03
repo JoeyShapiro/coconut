@@ -9,8 +9,24 @@ pub struct Connection {
 }
 
 pub struct Packet {
+    version: u8,
+    type_: u8,
     pub id: u8,
-    data: Vec<f32>,
+    data: Vec<u8>,
+}
+
+impl Packet {
+    pub fn from_bytes(data: &[u8]) -> Self {
+        let version = data[0];
+        let type_ = data[1];
+        let id = data[2];
+        // let mut d: Vec<f32> = vec![];
+        // for i in 2..data.len() {
+        //     let b: [u8; 4] = [data[i], data[i+1], data[i+2], data[i+3]];
+        //     d.push(sample_from_bytes(b));
+        // }
+        Self { version, type_, id, data: data[2..].to_vec() }
+    }
 }
 
 const PKT_VERSION: u8 = 1;
@@ -52,16 +68,22 @@ impl Connection {
         Ok(Self {  version: buf[0], id: buf[2], stream })
     }
 
-    pub fn rx_data(&mut self) -> Vec<Packet> {
+    // will convert rx data to the proper packets, but not do anything with it
+    pub fn rx_data(&mut self) -> Result<Vec<Packet>, std::io::Error> {
         // receive the data
+        let mut buf: [u8; 4096] = [0; 4096];
+        self.stream.read(&mut buf)?;
+
+        let p = Packet::from_bytes(&mut buf);
+
         let mut data: Vec<Packet> = vec![];
         for _ in 0..512 {
-            data.push(Packet { id: 1, data: vec![0.0] });
+            data.push(Packet { version: PKT_VERSION, type_: PKT_SAMPLE, id: 1, data: vec![0] });
         }
         for _ in 0..512 {
-            data.push(Packet { id: 2, data: vec![0.0] });
+            data.push(Packet { version: PKT_VERSION, type_: PKT_SAMPLE, id: 2, data: vec![0] });
         }
-        data
+        Ok(data)
     }
 
     pub fn tx_data(&mut self, data: &mut Vec<f32>) -> Result<(), std::io::Error> {

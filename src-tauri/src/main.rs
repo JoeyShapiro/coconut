@@ -208,7 +208,7 @@ fn main() {
                         return;
                     }
                 };
-                data = conn.rx_data();
+                data = conn.rx_data().unwrap();
             }
 
             let users = if let Some(settings) = & *r_state_rx.lock().unwrap() {

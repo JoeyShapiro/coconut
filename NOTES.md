@@ -66,3 +66,14 @@ u32 is u1 u2 u3 u4. padded with 0s
 then next n chunks are that user. compact, maybe, but confusing
 actually, i dont think this would save much room. will kinda, but not really
 i think i just have to make sure im not cross packets
+
+
+if a user tx, then send it right away. this would get heavy, and how would i merge samples
+i can have ther server send batches to everyone. oh and that would handle emptiness
+i can send 0s if the user doesnt tx, but i dont think i need to. i already have it set up with user ids
+i can send data at a constant interval. this is good testing for multiplayer
+rather than every time something happens. that would be a lot of transfering
+i will also have packets do multiple samples, as they do not right now
+it would be easy to set up, b ut would take WAY too long. that would mean i could compact a lot of the code
+and it would be less messy
+im still curious about when i should transmit. every message might work in most cases, but lets try this to see

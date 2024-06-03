@@ -55,6 +55,14 @@ func handleConnection(conn net.Conn) {
 			if id != 0 {
 				RemoveUser(id)
 				fmt.Printf("user with id %d has left\n", id) // server only cares about the id
+				// send leave packet to other users
+				for k, v := range users {
+					if k != id {
+						dataJoin := []byte{PKT_VERSION, PKT_LEAVE, id}
+
+						(*v.Conn).Write(dataJoin)
+					}
+				}
 			}
 			break
 		} else if err != nil {
@@ -85,6 +93,16 @@ func handleConnection(conn net.Conn) {
 
 			fmt.Printf("%s has joined with the id %d\n", user.User, id)
 
+			// send join packet to other users
+			for k, v := range users {
+				if k != id {
+					dataJoin := []byte{PKT_VERSION, PKT_JOIN, id}
+					dataJoin = append(dataJoin, []byte(user.User)...)
+
+					(*v.Conn).Write(dataJoin)
+				}
+			}
+
 			conn.Write(data)
 		} else if p.Type == PKT_SAMPLE {
 			if len(p.Data) != 2048 {
@@ -104,6 +122,8 @@ const (
 	PKT_GREETINGS
 	PKT_SAMPLE
 	PKT_OK
+	PKT_JOIN
+	PKT_LEAVE
 )
 
 type UserConn struct {
@@ -113,7 +133,7 @@ type UserConn struct {
 
 func InsertUser(user UserConn) (uint8, error) {
 	// we will always skip 0. that is reserved
-	for i := 1; i < int(maxConnections+1); i++ {
+	for i := 1; i <= int(maxConnections); i++ {
 		if _, ok := users[uint8(i)]; !ok {
 			users[uint8(i)] = user
 			return uint8(i), nil
@@ -129,6 +149,10 @@ func RemoveUser(id uint8) error {
 	}
 
 	delete(users, id)
+	return nil
+}
+
+func SpreadPacket(p Packet) error {
 	return nil
 }
 
