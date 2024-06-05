@@ -233,6 +233,9 @@ fn main() {
             let mut i = 512;
             let mut talkers: Vec<u8> = vec![];
             while let Some(packet) = data.pop() {
+                if talkers.contains(&packet.id) { // if a user sends another sample, then we are done with this sample
+
+                }
                 if packet.id != user.id {
                     // println!("rx: user changed: {} -> {} {} {}", user.id, packet.id, i, data.len());
                     user = users.get(&packet.id).unwrap_or_else(|| {

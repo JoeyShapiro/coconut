@@ -77,3 +77,22 @@ i will also have packets do multiple samples, as they do not right now
 it would be easy to set up, b ut would take WAY too long. that would mean i could compact a lot of the code
 and it would be less messy
 im still curious about when i should transmit. every message might work in most cases, but lets try this to see
+
+have rx just handle packets.
+how can i know its done, i cant have dupes. maybe either check for end or make end.
+yeah, its a stream, but not really. but it is, it just has some endings
+
+what if one user is sending a lot faster. i cant send batches. and i cant be sure when batches are
+i could use the same strat as the client, but that doesnt seem right
+but i dont want the client doing all the lifting, and sending a bunch of data around.
+kets just try to copy the client idea
+
+i can assume then, that a rx has has a full sample, then the client can do whatever they want.
+the server will determine when to give. then it makes the client stay how it is
+
+alternativatly, the client could be like work, and very loose. a sample can end at any moment.
+i would have to rewrite some stuff, and it would be confusing, but it would allow for the server
+to send whatever it wants.
+then, when the client gets END_OF_SAMPLE, it would send it to the output, and reset everything.
+the loop would be constant.
+lets fall back to this if i need to
